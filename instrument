@@ -23,19 +23,6 @@
 	.text/
 ;
 
-# code to open tracing output file after the start of execution NOTE:
-# we're doing this after the first cfi_def_cfa_register after the main
-# function.
-/main:/,/	.cfi_def_cfa_register 6/ s/\(	.cfi_def_cfa_register 6\)/\1\
-	movl	%edi, -20(%rbp)\
-	movq	%rsi, -32(%rbp)\
-	movl    $.TRACE0, %esi\
-	movl    $.TRACE1, %edi\
-	call    fopen\
-	movq	%rax, __tracer_fd(%rip)\
-	movq	__tracer_fd(%rip), %rax/
-;
-
 # Instrument every label except for the range between the start of
 # main: and when .cfi_def_cfa_register 6 is set.  This ensures we
 # don't write to the tracer file handle before it is initialized.
@@ -47,12 +34,20 @@
 	.string "\1\\n"\
 	.text\
 .\1:\
-        movq    __tracer_fd(%rip), %rax\
-        movq    %rax, %rcx\
+	movq	__tracer_fd(%rip), %rax\
+	testq	%rax, %rax\
+	jne	.TRACE\1ALREADY\
+	movl	$.TRACE0, %esi\
+	movl	$.TRACE1, %edi\
+	call	fopen\
+	movq	%rax, __tracer_fd(%rip)\
+.TRACE\1ALREADY:\
+	movq	__tracer_fd(%rip), %rax\
+	movq	%rax, %rcx\
         movl    __tracer_length\1n, %edx\
-        movl    $1, %esi\
+	movl	$1, %esi\
         movl    $.TRACE\1, %edi\
-	call    fwrite/
+	call	fwrite/
 ;
 
 s/__tracer_length[^,]\{32\},/$32,/
