@@ -1,8 +1,11 @@
 %.s: %.c
 	$(CC) -o $@ -S $^
 
+%.inst.s: %.s
+	./instrument $^ > $@
+
 %: %.s
 	$(CC) -o $@ $^
 
 clean:
-	rm -f *.s plain traced trace.out
+	rm -f *.inst *.inst.s *.s plain traced trace.out
