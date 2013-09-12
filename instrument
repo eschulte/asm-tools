@@ -1,0 +1,45 @@
+#!/usr/sbin/sed -f
+# -*- sed -*-
+#
+# Usage: instrument program.s > instrumented.s
+#
+# Instrument the program in program.s to print a trace of program
+# execution to "trace.out".
+# - Instrumentation is inserted after every control flow instruction,
+#   and jump target.
+# - The output file lists executed labels and ASM LOC.
+# - Note when data addresses are used.
+
+# global variable declaration at the top of the file
+/^	\.file/ a\
+	.comm   __tracer_fd,8,8
+;
+
+# data to open tracing output file before main
+/main:/ i\
+.TRACE0:\
+	.string "w"\
+.TRACE1:\
+	.string "trace.out\\n"
+;
+
+# code to open tracing output file after main
+/main:/ a\
+	movl	%edi, -20(%rbp)\
+	movq	%rsi, -32(%rbp)\
+	movl    $.TRACE0, %esi\
+	movl    $.TRACE1, %edi\
+	call    fopen
+;
+
+# instrument every label after main
+/main:/,$ s/^\.\(L.*\):/.TRACE_\1:\
+	.string "\1\\n"\
+.\1:\
+        movq    __tracer_fd(%rip), %rax\
+        movq    %rax, %rcx\
+        movl    $6, %edx\
+        movl    $1, %esi\
+        movl    $.TRACE_\1, %edi\
+	call    fwrite/
+;
