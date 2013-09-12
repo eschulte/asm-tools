@@ -1,2 +1,5 @@
+trace.out
+traced
 plain
+inst
 *.s
