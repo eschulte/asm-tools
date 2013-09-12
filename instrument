@@ -15,25 +15,28 @@
 	.comm   __tracer_fd,8,8
 ;
 
-# data to open tracing output file before main
-/main:/ i\
+# data to open tracing output file before the .text section
+/	.text/ i\
 .TRACE0:\
 	.string "w"\
 .TRACE1:\
-	.string "trace.out\\n"
+	.string "trace.out"
 ;
 
-# code to open tracing output file after main
-/main:/ a\
+# code to open tracing output file after the start of execution
+# Note: for now we're using 
+/	.cfi_def_cfa_register 6/ a\
 	movl	%edi, -20(%rbp)\
 	movq	%rsi, -32(%rbp)\
 	movl    $.TRACE0, %esi\
 	movl    $.TRACE1, %edi\
-	call    fopen
+	call    fopen\
+	movq	%rax, __tracer_fd(%rip)\
+	movq	__tracer_fd(%rip), %rax
 ;
 
-# instrument every label after main
-/main:/,$ s/^\.\(L.*\):/.TRACE_\1:\
+# instrument every label after the start of execution
+/	.cfi_def_cfa_register 6/,$ s/^\.\(L.*\):/.TRACE_\1:\
 	.string "\1\\n"\
 .\1:\
         movq    __tracer_fd(%rip), %rax\
