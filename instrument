@@ -39,7 +39,10 @@
 # Instrument every label except for the range between the start of
 # main: and when .cfi_def_cfa_register 6 is set.  This ensures we
 # don't write to the tracer file handle before it is initialized.
-/	.cfi_def_cfa_register 6/,/main:/ s/^\.\(L.*\):/.section	.rodata\
+#
+# NOTE: This relies on gcc outputting labels of the form .L### only
+# for regular code.
+/	.cfi_def_cfa_register 6/,/main:/ s/^\.\(L[0-9]*\):/	.section	.rodata\
 .TRACE\1:\
 	.string "\1\\n"\
 	.text\
