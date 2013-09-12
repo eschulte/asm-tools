@@ -36,13 +36,15 @@
 ;
 
 # instrument every label after the start of execution
-/	.cfi_def_cfa_register 6/,$ s/^\.\(L.*\):/.TRACE_\1:\
+/	.cfi_def_cfa_register 6/,$ s/^\.\(L.*\):/.section	.data\
+.TRACE\1:\
 	.string "\1\\n"\
+.section	.text\
 .\1:\
         movq    __tracer_fd(%rip), %rax\
         movq    %rax, %rcx\
         movl    $6, %edx\
         movl    $1, %esi\
-        movl    $.TRACE_\1, %edi\
+        movl    $.TRACE\1, %edi\
 	call    fwrite/
 ;
