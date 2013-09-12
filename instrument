@@ -16,35 +16,70 @@
 ;
 
 # data to open tracing output file before the .text section
-/	.text/ i\
-.TRACE0:\
+0,/	.text/ s//.TRACE0:\
 	.string "w"\
 .TRACE1:\
-	.string "trace.out"
+	.string "trace.out"\
+	.text/
 ;
 
-# code to open tracing output file after the start of execution
-# Note: for now we're using 
-/	.cfi_def_cfa_register 6/ a\
+# code to open tracing output file after the start of execution NOTE:
+# we're doing this after the first cfi_def_cfa_register after the main
+# function.
+/main:/,/	.cfi_def_cfa_register 6/ s/\(	.cfi_def_cfa_register 6\)/\1\
 	movl	%edi, -20(%rbp)\
 	movq	%rsi, -32(%rbp)\
 	movl    $.TRACE0, %esi\
 	movl    $.TRACE1, %edi\
 	call    fopen\
 	movq	%rax, __tracer_fd(%rip)\
-	movq	__tracer_fd(%rip), %rax
+	movq	__tracer_fd(%rip), %rax/
 ;
 
-# instrument every label after the start of execution
-/	.cfi_def_cfa_register 6/,$ s/^\.\(L.*\):/.section	.data\
+# Instrument every label except for the range between the start of
+# main: and when .cfi_def_cfa_register 6 is set.  This ensures we
+# don't write to the tracer file handle before it is initialized.
+/	.cfi_def_cfa_register 6/,/main:/ s/^\.\(L.*\):/.section	.rodata\
 .TRACE\1:\
 	.string "\1\\n"\
-.section	.text\
+	.text\
 .\1:\
         movq    __tracer_fd(%rip), %rax\
         movq    %rax, %rcx\
-        movl    $6, %edx\
+        movl    __tracer_length\1n, %edx\
         movl    $1, %esi\
         movl    $.TRACE\1, %edi\
 	call    fwrite/
 ;
+
+s/__tracer_length[^,]\{32\},/$32,/
+s/__tracer_length[^,]\{31\},/$31,/
+s/__tracer_length[^,]\{30\},/$30,/
+s/__tracer_length[^,]\{29\},/$29,/
+s/__tracer_length[^,]\{28\},/$28,/
+s/__tracer_length[^,]\{27\},/$27,/
+s/__tracer_length[^,]\{26\},/$26,/
+s/__tracer_length[^,]\{25\},/$25,/
+s/__tracer_length[^,]\{24\},/$24,/
+s/__tracer_length[^,]\{23\},/$23,/
+s/__tracer_length[^,]\{22\},/$22,/
+s/__tracer_length[^,]\{21\},/$21,/
+s/__tracer_length[^,]\{20\},/$20,/
+s/__tracer_length[^,]\{19\},/$19,/
+s/__tracer_length[^,]\{18\},/$18,/
+s/__tracer_length[^,]\{17\},/$17,/
+s/__tracer_length[^,]\{16\},/$16,/
+s/__tracer_length[^,]\{15\},/$15,/
+s/__tracer_length[^,]\{14\},/$14,/
+s/__tracer_length[^,]\{13\},/$13,/
+s/__tracer_length[^,]\{12\},/$12,/
+s/__tracer_length[^,]\{11\},/$11,/
+s/__tracer_length[^,]\{10\},/$10,/
+s/__tracer_length[^,]\{9\},/$9,/
+s/__tracer_length[^,]\{8\},/$8,/
+s/__tracer_length[^,]\{7\},/$7,/
+s/__tracer_length[^,]\{6\},/$6,/
+s/__tracer_length[^,]\{5\},/$5,/
+s/__tracer_length[^,]\{4\},/$4,/
+s/__tracer_length[^,]\{3\},/$3,/
+s/__tracer_length[^,]\{2\},/$2,/
