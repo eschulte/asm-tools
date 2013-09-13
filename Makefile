@@ -2,10 +2,11 @@
 	$(CC) -o $@ -S $^
 
 %.inst.s: %.s
-	./instrument $^ > $@
+	./instrument $^ > $@;
+	./post-instrument -i $@
 
 %: %.s
 	$(CC) -o $@ $^
 
 clean:
-	rm -f *.inst *.inst.s *.s plain traced trace.out
+	rm -f *.inst *.inst.s *.s plain traced trace.rodata trace.out

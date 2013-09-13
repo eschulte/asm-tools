@@ -46,7 +46,7 @@
 	movq	%rax, %rcx\
 	movl    __tracer_length\1n, %edx\
 	movl	$1, %esi\
-	movl    $.TRACE\1, %edi\
+	movl    $.TRACES\1, %edi\
 	call	fwrite/;}
 
 # At the end of the file, write out all of the label names.
@@ -54,9 +54,10 @@ ${i\
 	.section rodata
 ;x;
 s/\n//;
-s/\.L\([0-9]*\):/.TRACE\1:\
+s/\.L\([0-9]*\):/.TRACES\1:\
 	.string "\1\\n"/g;
-p;x};
+w trace.rodata
+x};
 
 # Finally, calculate the length of the label names as fwrite requires
 # a length argument.

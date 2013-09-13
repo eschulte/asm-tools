@@ -1,0 +1,11 @@
+#!/bin/sed -f
+# -*- sed -*-
+#
+# Copyright (C) 2013 Eric Schulte
+# Licensed under the Gnu Public License Version 3 or later
+/^	.file/{
+p;
+s/.*/	.section	.rodata/;
+p;
+s/\(.*\)/cat trace.rodata/e;
+}
