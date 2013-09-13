@@ -27,17 +27,13 @@
 	.text/
 ;
 
-# Instrument every label except for the range between the start of
-# main: and when .cfi_def_cfa_register 6 is set.  This ensures we
-# don't write to the tracer file handle before it is initialized.
+# Instrument every code label with code to conditionally initialize
+# the trace file handle if null, and to then print a trace of the
+# label.
 #
 # NOTE: This relies on gcc outputting labels of the form .L### only
-# for regular code.
-/	.cfi_def_cfa_register 6/,/main:/ s/^\.\(L[0-9]*\):/	.section	.rodata\
-.TRACE\1:\
-	.string "\1\\n"\
-	.text\
-.\1:\
+#       for regular code.
+/^\.L[0-9]*:/{H;s/^\.L\([0-9]*\):/.L\1:\
 	movq	__tracer_fd(%rip), %rax\
 	testq	%rax, %rax\
 	jne	.TRACE\1ALREADY\
@@ -48,12 +44,22 @@
 .TRACE\1ALREADY:\
 	movq	__tracer_fd(%rip), %rax\
 	movq	%rax, %rcx\
-        movl    __tracer_length\1n, %edx\
+	movl    __tracer_length\1n, %edx\
 	movl	$1, %esi\
-        movl    $.TRACE\1, %edi\
-	call	fwrite/
-;
+	movl    $.TRACE\1, %edi\
+	call	fwrite/;}
 
+# At the end of the file, write out all of the label names.
+${i\
+	.section rodata
+;x;
+s/\n//;
+s/\.L\([0-9]*\):/.TRACE\1:\
+	.string "\1\\n"/g;
+p;x};
+
+# Finally, calculate the length of the label names as fwrite requires
+# a length argument.
 s/__tracer_length[^,]\{32\},/$32,/
 s/__tracer_length[^,]\{31\},/$31,/
 s/__tracer_length[^,]\{30\},/$30,/
