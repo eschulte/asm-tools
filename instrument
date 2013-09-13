@@ -1,4 +1,4 @@
-#!/usr/sbin/sed -f
+#!/bin/sed -f
 # -*- sed -*-
 #
 # Copyright (C) 2013 Eric Schulte
