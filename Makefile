@@ -1,12 +1,11 @@
 %.s: %.c
 	$(CC) -o $@ -S $^
 
-%.temp.s: %.s
-	./instrument $^ > $@;
-
-%.inst.s: %.temp.s
-	./post-instrument $^ > $@;
-	@ rm -f trace.rodata
+%.inst.s: %.s
+	./instrument $^ > $@
+	cat $@ >> trace.rodata
+	echo "	.section	.rodata" >$@
+	cat trace.rodata >> $@
 
 %: %.s
 	$(CC) -o $@ $^
