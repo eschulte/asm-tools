@@ -3,7 +3,7 @@
 #
 # Copyright (C) 2013 Eric Schulte
 # Licensed under the Gnu Public License Version 3 or later
-/^	.file/{
+1{
 p;
 s/.*/	.section	.rodata/;
 p;
