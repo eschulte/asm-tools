@@ -3,8 +3,6 @@
 
 %.inst.s: %.s
 	./instrument $^ > $@
-	cat $@ >> trace.prefix
-	mv trace.prefix $@
 
 %: %.s
 	$(CC) -o $@ $^

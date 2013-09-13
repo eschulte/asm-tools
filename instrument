@@ -14,19 +14,16 @@
 #
 # - (TODO: Write .data addresses as they are used.)
 
-# global variable declaration at the top of the file
-1 {a\
-	.comm   __tracer_fd,8,8
-;p;s/.*/        .section        .rodata\n/;h;d
-}
-
-# data to open tracing output file before the .text section
-0,/	.text/ s//.TRACE0:\
+1 {
+h;
+# declare the trac output fd at the top of the file
+s/.*/	.comm   __tracer_fd,8,8/;H;
+s/.*/        .section        .rodata\
+.TRACE0:\
 	.string "w"\
 .TRACE1:\
-	.string "trace.out"\
-	.text/
-;
+	.string "trace.out"/;p;d
+}
 
 # Instrument every code label with code to conditionally initialize
 # the trace file handle if null, and to then print a trace of the
@@ -34,7 +31,10 @@
 #
 # NOTE: This relies on gcc outputting labels of the form .L### only
 #       for regular code.
-/^\.L[0-9]*:/{H;s/^\.L\([0-9]*\):/.L\1:\
+/^\.L[0-9]*:/{
+s/\.L\([0-9]*\):/.TRACES\1:\
+	.string "\1\\n"/;p;
+s/^\.TRACES\([0-9]*\):.*\n.*\'/.L\1:\
 	movq	__tracer_fd(%rip), %rax\
 	testq	%rax, %rax\
 	jne	.TRACE\1ALREADY\
@@ -48,46 +48,24 @@
 	movl    __tracer_length\1n, %edx\
 	movl	$1, %esi\
 	movl    $.TRACES\1, %edi\
-	call	fwrite/;}
+	call	fwrite/;H;d}
 
-# At the end of the file, write out all of the label names.
+# At the end of the file, write out all of the held data
+# (basically the whole file)
 ${x;
-s/\n//;
-s/\.L\([0-9]*\):/.TRACES\1:\
-	.string "\1\\n"/g;
-w trace.prefix
-x};
+# Calculate the length of the label names.
+s/__tracer_length[^,]\{12\},/$12,/g;
+s/__tracer_length[^,]\{11\},/$11,/g;
+s/__tracer_length[^,]\{10\},/$10,/g;
+s/__tracer_length[^,]\{9\},/$9,/g;
+s/__tracer_length[^,]\{8\},/$8,/g;
+s/__tracer_length[^,]\{7\},/$7,/g;
+s/__tracer_length[^,]\{6\},/$6,/g;
+s/__tracer_length[^,]\{5\},/$5,/g;
+s/__tracer_length[^,]\{4\},/$4,/g;
+s/__tracer_length[^,]\{3\},/$3,/g;
+s/__tracer_length[^,]\{2\},/$2,/g;
+p}
 
-# Finally, calculate the length of the label names as fwrite requires
-# a length argument.
-s/__tracer_length[^,]\{32\},/$32,/
-s/__tracer_length[^,]\{31\},/$31,/
-s/__tracer_length[^,]\{30\},/$30,/
-s/__tracer_length[^,]\{29\},/$29,/
-s/__tracer_length[^,]\{28\},/$28,/
-s/__tracer_length[^,]\{27\},/$27,/
-s/__tracer_length[^,]\{26\},/$26,/
-s/__tracer_length[^,]\{25\},/$25,/
-s/__tracer_length[^,]\{24\},/$24,/
-s/__tracer_length[^,]\{23\},/$23,/
-s/__tracer_length[^,]\{22\},/$22,/
-s/__tracer_length[^,]\{21\},/$21,/
-s/__tracer_length[^,]\{20\},/$20,/
-s/__tracer_length[^,]\{19\},/$19,/
-s/__tracer_length[^,]\{18\},/$18,/
-s/__tracer_length[^,]\{17\},/$17,/
-s/__tracer_length[^,]\{16\},/$16,/
-s/__tracer_length[^,]\{15\},/$15,/
-s/__tracer_length[^,]\{14\},/$14,/
-s/__tracer_length[^,]\{13\},/$13,/
-s/__tracer_length[^,]\{12\},/$12,/
-s/__tracer_length[^,]\{11\},/$11,/
-s/__tracer_length[^,]\{10\},/$10,/
-s/__tracer_length[^,]\{9\},/$9,/
-s/__tracer_length[^,]\{8\},/$8,/
-s/__tracer_length[^,]\{7\},/$7,/
-s/__tracer_length[^,]\{6\},/$6,/
-s/__tracer_length[^,]\{5\},/$5,/
-s/__tracer_length[^,]\{4\},/$4,/
-s/__tracer_length[^,]\{3\},/$3,/
-s/__tracer_length[^,]\{2\},/$2,/
+# all unmatched lines are simply held
+{H;d}
