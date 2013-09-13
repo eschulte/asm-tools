@@ -1,9 +1,12 @@
 %.s: %.c
 	$(CC) -o $@ -S $^
 
-%.inst.s: %.s
+%.temp.s: %.s
 	./instrument $^ > $@;
-	./post-instrument -i $@
+
+%.inst.s: %.temp.s
+	./post-instrument $^ > $@;
+	@ rm -f trace.rodata
 
 %: %.s
 	$(CC) -o $@ $^
