@@ -3,12 +3,11 @@
 
 %.inst.s: %.s
 	./instrument $^ > $@
-	cat $@ >> trace.rodata
-	echo "	.section	.rodata" >$@
-	cat trace.rodata >> $@
+	cat $@ >> trace.prefix
+	mv trace.prefix $@
 
 %: %.s
 	$(CC) -o $@ $^
 
 clean:
-	rm -f *.inst *.inst.s *.s plain traced trace.rodata trace.out
+	rm -f *.inst *.inst.s *.s plain traced trace.prefix trace.out

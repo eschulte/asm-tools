@@ -15,9 +15,10 @@
 # - (TODO: Write .data addresses as they are used.)
 
 # global variable declaration at the top of the file
-/^	\.file/ a\
+1 {a\
 	.comm   __tracer_fd,8,8
-;
+;p;s/.*/        .section        .rodata\n/;h;d
+}
 
 # data to open tracing output file before the .text section
 0,/	.text/ s//.TRACE0:\
@@ -50,13 +51,11 @@
 	call	fwrite/;}
 
 # At the end of the file, write out all of the label names.
-${i\
-	.section rodata
-;x;
+${x;
 s/\n//;
 s/\.L\([0-9]*\):/.TRACES\1:\
 	.string "\1\\n"/g;
-w trace.rodata
+w trace.prefix
 x};
 
 # Finally, calculate the length of the label names as fwrite requires
