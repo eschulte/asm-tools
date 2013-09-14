@@ -1,6 +1,5 @@
-trace.rodata
 trace.out
-traced
 plain
+w-func
 *.inst
 *.s
