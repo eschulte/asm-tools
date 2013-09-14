@@ -5,14 +5,8 @@
 # Licensed under the Gnu Public License Version 3 or later
 #
 # Instrument an assembly program with assembler isntructions to print
-# a full trace of program execution to "trace.out".
-#
-# - Instrumentation is inserted around every control flow instruction
-#   and jump target.
-#
-# - The output file lists executed labels (TODO: and ASM LOC).
-#
-# - (TODO: Write .data addresses as they are used.)
+# a full trace of program execution to "trace.out".  Tracing after
+# every jump target and (TODO: after every jump instruction).
 
 1 {
 h;
@@ -25,9 +19,8 @@ s/.*/	.section	.rodata\
 	.string "trace.out"/;p;d
 }
 
-# Instrument every code label with code to conditionally initialize
-# the trace file handle if null, and to then print a trace of the
-# label.
+# Trace every jump target.  Conditionally initialize the trace file
+# handle if null, then print a trace of the label name.
 #
 # NOTE: This relies on gcc outputting labels of the form .L### only
 #       for regular code.
