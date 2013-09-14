@@ -41,6 +41,16 @@ s/^\.TRACES\([0-9]*\):.*\n.*\'/.L\1:\
 	pushq	%rdx\
 	pushq	%rsi\
 	pushq	%rdi\
+	pushq	%rbp\
+	pushq	%rsp\
+	pushq	%r8\
+	pushq	%r9\
+	pushq	%r10\
+	pushq	%r11\
+	pushq	%r12\
+	pushq	%r13\
+	pushq	%r14\
+	pushq	%r15\
 	movq	__tracer_fd(%rip), %rax\
 	testq	%rax, %rax\
 	jne	.TRACE\1ALREADY\
@@ -55,6 +65,16 @@ s/^\.TRACES\([0-9]*\):.*\n.*\'/.L\1:\
 	movl	$1, %esi\
 	movl	$.TRACES\1, %edi\
 	call	fwrite\
+	popq	%r15\
+	popq	%r14\
+	popq	%r13\
+	popq	%r12\
+	popq	%r11\
+	popq	%r10\
+	popq	%r9\
+	popq	%r8\
+	popq	%rsp\
+	popq	%rbp\
 	popq	%rdi\
 	popq	%rsi\
 	popq	%rdx\
