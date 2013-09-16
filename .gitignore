@@ -1,5 +1,8 @@
-trace.out
-plain
-w-func
-*.inst
-*.s
+asm-trace
+
+examples/plain
+examples/w-func
+
+**/trace.out
+**/*.inst
+**/*.s

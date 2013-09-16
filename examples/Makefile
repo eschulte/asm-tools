@@ -1,18 +1,5 @@
-INST=./asm-inst
+INST=../asm-trace
 SHELL=bash
-
-.PHONY: check clean
-
-all: plain.inst.s plain.inst w-func.inst.s w-func.inst
-
-%.s: %.c
-	$(CC) -o $@ -S $^
-
-%.inst.s: %.s
-	$(INST) $^ > $@
-
-%: %.s
-	$(CC) -o $@ $^
 
 check-plain: plain.inst
 	@ printf "\e[1;1m$^\t"
@@ -30,7 +17,13 @@ check-w-func: w-func.inst
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\n"; \
 	fi
 
-check: check-plain check-w-func
+%.s: %.c
+	$(CC) -o $@ -S $^
 
-clean:
-	rm -f *.s *.inst plain w-func trace.out
+%.inst.s: %.s
+	$(INST) inst $^ > $@
+
+%: %.s
+	$(CC) -o $@ $^
+
+check: check-plain check-w-func
