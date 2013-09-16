@@ -1,0 +1,84 @@
+Notes                                                      -*- org -*-
+#+Options: ^:{}
+
+* gcc assembler labels
+http://stackoverflow.com/questions/9799676/what-do-the-gcc-assembly-output-labels-signify
+
+Look at the uses of the =ASM_GENERATE_INTERNAL_LABEL= macro.
+: ./config/i386/att.h:85:#define ASM_GENERATE_INTERNAL_LABEL(BUF,PREFIX,NUMBER)
+The second =PREFIX= argument determines the type of the label.
+
+** Manually harvested labels
+| ./config/i386/i386.c:13723       | L                  | code label                     |
+| ./config/rs6000/rs6000.c:20027   |                    |                                |
+| ./config/s390/s390.h:863         |                    | addr vector elt                |
+| ./config/s390/s390.h:873         |                    | addr diff elt                  |
+| ./config/i386/i386.c:8856        | LPR                | pc thunk                       |
+| ./config/i386/i386.c:10170       | LPSRL              | stack and probe                |
+| ./config/rs6000/rs6000.c:20458   |                    |                                |
+| ./config/pa/pa.c:8370            | LTHN               | externally visible thunk       |
+| ./config/rs6000/rs6000.c:16992   | LCP                | integer                        |
+| ./config/frv/frv.c:6982          |                    |                                |
+| ./config/rs6000/rs6000.c:24002   | LP                 | profile hook                   |
+| ./config/sparc/sparc.c:9758      |                    |                                |
+| ./config/s390/s390.c:9913        |                    |                                |
+| ./config/sparc/sparc.c:4424      | LADDPC             | thunk name                     |
+| ./config/m32r/m32r.h:838         | LM                 | output source line             |
+| ./config/arm/arm.c:25247         | LTHUMBFUNC         | thunk for C++ mult inheritance |
+| ./config/arm/arm.c:26299         | LPIC               | addr constant                  |
+| ./config/microblaze/microblaze.h | Lfe                | declare function size          |
+| ./varasm.c:2464                  | LF                 | static space                   |
+| ./varasm.c:3214                  | LC                 | constant description           |
+| ./varasm.c:7188                  | LANCHOR            | archor                         |
+| ./dbxout.c:1321                  | LFBB               | function start (basic block)   |
+| ./coverage.c:1077                | LPBX               | gcov                           |
+
+** Label macros defined in dwarf2out.c
+#+begin_src sh
+  cat dwarf2out.c|grep define|grep _LABEL
+#+end_src
+
+| LFB                    | func begin label                    |
+| LFE                    | func end label                      |
+| LPE                    | prologue end label                  |
+| LEB                    | epilogue begin label                |
+| Lframe                 | frame begin label                   |
+| LSCIE                  | cie after size label                |
+| LECIE                  | cie end label                       |
+| LSFDE                  | fde label                           |
+| LASFDE                 | fde after size label                |
+| LEFDE                  | fde end label                       |
+| LSLT                   | line number begin label             |
+| LELT                   | line number end label               |
+| LASLTP                 | ln prolog as label                  |
+| LELTP                  | ln prolog end label                 |
+| DW                     | die label prefix                    |
+| Ltext                  | text section label                  |
+| Ltext_cold             | cold text section label             |
+| Ldebug_line            | debug line section label            |
+| Lskeleton_debug_line   | debug skeleton line section label   |
+| Ldebug_info            | debug info section label            |
+| Lskeleton_debug_info   | debug skeleton info section label   |
+| Ldebug_abbrev          | debug abbrev section label          |
+| Lskeleton_debug_abbrev | debug skeleton abbrev section label |
+| Ldebug_addr            | debug addr section label            |
+| Ldebug_loc             | debug loc section label             |
+| Ldebug_ranges          | debug ranges section label          |
+| Ldebug_macinfo         | debug macinfo section label         |
+| Ldebug_macro           | debug macro section label           |
+| Letext                 | text end label                      |
+| Letext_cold            | cold end label                      |
+| LBB                    | block begin label                   |
+| LBE                    | block end label                     |
+| LM                     | line code label                     |
+
+* spread counts along the file
+Convert raw samples to counts.
+#+begin_src sh
+cat trace.out|sort|uniq -c > trace.counts
+#+end_src
+
+Convert counts to labeling script and use it to collect counts by ASM line.
+#+begin_src sh
+cat plain.s|sed $(cat trace.counts|asm-annotate)
+#+end_src
