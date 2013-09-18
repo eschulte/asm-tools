@@ -18,12 +18,12 @@ check-w-func: w-func.inst
 	fi
 
 %.s: %.c
-	$(CC) -o $@ -S $^
+	@$(CC) -o $@ -S $^
 
 %.inst.s: %.s
-	$(INST) inst $^ > $@
+	@$(INST) inst $^ > $@
 
 %: %.s
-	$(CC) -o $@ $^
+	@$(CC) -o $@ $^
 
 check: check-plain check-w-func
