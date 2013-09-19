@@ -82,3 +82,5 @@ Convert counts to labeling script and use it to collect counts by ASM line.
 #+begin_src sh
 cat plain.s|sed $(cat trace.counts|asm-annotate)
 #+end_src
+* control flow instructions
+http://en.wikibooks.org/wiki/X86_Assembly/Control_Flow

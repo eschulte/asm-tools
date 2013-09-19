@@ -29,56 +29,75 @@ The special variable MATCH is bound to the match data"
                       rest))
               forms))))
 
+(defvar x86-control-flow-instructions
+  '(;; jumps
+    je jne jg jge ja jae jl jle jb jbe jo jz jnz
+    ;; function calls
+    call ret
+    ;; loop
+    loop loopx))
+
+(defvar x86-control-flow-rx
+  (format nil "^	(~(~{~a~^|~}~))" x86-control-flow-instructions))
+
 (defun instrument (input-file trace-out &key (stream t))
   "Instrument INPUT-FILE to write an execution trace to TRACE-OUT."
-  (let ((last-label "BEGINNING")
+  (let ((last-label "")
+        (jump-count 0)
         (regs '(rax rbx rcx rdx rsi rdi rbp rsp r8 r9 r10 r11 r12 r13 r14 r15)))
-    (mapc
-     {apply #'format stream}
-     `(;; preamble
-       ("	.comm	__tracer_fd,8,8~%")
-       ("	.section	.rodata~%")
-       (".TRACE0:~%	.string \"w\"~%")
-       (".TRACE1:~%	.string \"~a\"~%" ,trace-out)
-       ;; body of the assembler file
-       ("~{~a~^~%~}"
-        ,(mapcan
-          (lambda-bind ((line-num . line))
-            (declare (ignorable line-num))
-            (re-cond line
-              ("\.L\([0-9]*\):"        ; code labels
-               (let ((name (aref matches 0)))
-                 ;; print data into preamble
-                 (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
-                 (setf last-label name)
-                 ;; return tracing code
-                 `(,line
-                   ,@(mapcar [#'string-downcase {format nil "	pushq	%~a"}]
-                             regs)
-                   " 	movq	__tracer_fd(%rip), %rax"
-                   " 	testq	%rax, %rax"
-                   ,(format nil " 	jne	.TRACE~aALREADY" name)
-                   " 	movl	$.TRACE0, %esi"
-                   " 	movl	$.TRACE1, %edi"
-                   " 	call	fopen"
-                   " 	movq	%rax, __tracer_fd(%rip)"
-                   ,(format nil " .TRACE~aALREADY:" name)
-                   " 	movq	__tracer_fd(%rip), %rax"
-                   " 	movq	%rax, %rcx"
-                   ,(format nil " 	movl	$~a, %edx"
-                            (1+ (length name)))
-                   " 	movl	$1, %esi"
-                   ,(format nil " 	movl	$.TRACES~a, %edi" name)
-                   " 	call	fwrite"
-                   ,@(mapcar [#'string-downcase {format nil "	popq	%~a"}]
-                             (reverse regs)))))
-              ("TODO: instrument"      ; control flow instructions
-               )
-              (:default (list line)))) ; all other lines
-          (with-open-file (in input-file)
-            (loop :for line = (read-line in nil :eof) :as index :from 0
-               :until (eq line :eof)
-               :collect (cons index line)))))))
+    (flet ((print-trace (name)
+             `(,@(mapcar [#'string-downcase {format nil "	pushq	%~a"}]
+                         regs)
+                 " 	movq	__tracer_fd(%rip), %rax"
+                 " 	testq	%rax, %rax"
+                 ,(format nil " 	jne	.TRACE~aALREADY" name)
+                 " 	movl	$.TRACE0, %esi"
+                 " 	movl	$.TRACE1, %edi"
+                 " 	call	fopen"
+                 " 	movq	%rax, __tracer_fd(%rip)"
+                 ,(format nil " .TRACE~aALREADY:" name)
+                 " 	movq	__tracer_fd(%rip), %rax"
+                 " 	movq	%rax, %rcx"
+                 ,(format nil " 	movl	$~a, %edx"
+                          (1+ (length name)))
+                 " 	movl	$1, %esi"
+                 ,(format nil " 	movl	$.TRACES~a, %edi" name)
+                 " 	call	fwrite"
+                 ,@(mapcar [#'string-downcase {format nil "	popq	%~a"}]
+                           (reverse regs)))))
+      (mapc
+       {apply #'format stream}
+       `(;; preamble
+         ("	.comm	__tracer_fd,8,8~%")
+         ("	.section	.rodata~%")
+         (".TRACE0:~%	.string \"w\"~%")
+         (".TRACE1:~%	.string \"~a\"~%" ,trace-out)
+         ;; body of the assembler file
+         ("~{~a~^~%~}"
+          ,(mapcan
+            (lambda-bind ((line-num . line))
+              (declare (ignorable line-num))
+              (re-cond line
+                ("\.L\([0-9]*\):"       ; code labels
+                 (let ((name (aref matches 0)))
+                   ;; print data into preamble
+                   (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
+                   (setf last-label name)
+                   (setf jump-count 0)
+                   ;; return tracing code
+                   (cons line (print-trace name))))
+                (x86-control-flow-rx    ; control flow instructions
+                 (let ((name (format nil "~aJ~d" last-label jump-count)))
+                   ;; print data into preamble
+                   (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
+                   (incf jump-count)
+                   ;; return tracing code
+                   (cons line (print-trace name))))
+                (:default (list line)))) ; all other lines
+            (with-open-file (in input-file)
+              (loop :for line = (read-line in nil :eof) :as index :from 0
+                 :until (eq line :eof)
+                 :collect (cons index line))))))))
     (format stream "~%")))
 
 
