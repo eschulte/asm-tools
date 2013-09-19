@@ -25,5 +25,5 @@ check: $(INST)
 	$(MAKE) -C examples/ $(MAKECMDGOALS)
 
 clean:
-	rm -f asm-trace *.fasl *.lx32fsl dumper-*.lisp **/*.s **/*.inst \
-	      plain w-func trace.out
+	rm -f asm-trace *.fasl *.lx32fsl dumper-*.lisp
+	$(MAKE) -C examples/ $(MAKECMDGOALS)

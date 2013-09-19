@@ -4,5 +4,7 @@ examples/plain
 examples/w-func
 
 **/trace.out
+**/trace.counts
 **/*.inst
 **/*.s
+**/*.fasl

@@ -18,14 +18,16 @@
 (defmacro re-cond (string &rest forms)
   "Conditionally execute FORMS based on matches to STRING.
 The special variable MATCH is bound to the match data"
-  `(let (matches)
+  `(let (matches name)
      (cond ,@(mapcar
               (lambda-bind ((re . rest))
                 (cons (if (or (keywordp re) (eq t re))
                           re
-                          `(setf matches (multiple-value-bind (match-p matches)
-                                             (scan-to-strings ,re ,string)
-                                           (when match-p matches))))
+                          `(multiple-value-bind (match-p match-array)
+                               (scan-to-strings ,re ,string)
+                             (when match-p
+                               (setf matches match-array
+                                     name (aref match-array 0)))))
                       rest))
               forms))))
 
@@ -40,8 +42,21 @@ The special variable MATCH is bound to the match data"
 (defvar x86-control-flow-rx
   (format nil "^	(~(~{~a~^|~}~))" x86-control-flow-instructions))
 
-(defun instrument (input-file trace-out &key (stream t))
-  "Instrument INPUT-FILE to write an execution trace to TRACE-OUT."
+(defvar code-label-rx "\\.L([0-9]*):")
+
+(defvar data-label-rx "\\.L([^0-9]\\S*):")
+
+(defvar data-reference-rx "\\$\\.L([^,\s]+)")
+
+(defun indexed-file-lines (asm-file)
+  (with-open-file (in asm-file)
+    (loop :for line = (read-line in nil :eof) :as index :from 0
+       :until (eq line :eof)
+       :collect (cons index line))))
+
+(defun instrument (asm-lines trace-out &key (stream t))
+  "Instrument ASM-LINES to write an execution trace to TRACE-OUT."
+  ;; TODO: trace function lines
   (let ((last-label "")
         (jump-count 0)
         (regs '(rax rbx rcx rdx rsi rdi rbp rsp r8 r9 r10 r11 r12 r13 r14 r15)))
@@ -78,27 +93,62 @@ The special variable MATCH is bound to the match data"
             (lambda-bind ((line-num . line))
               (declare (ignorable line-num))
               (re-cond line
-                ("\.L\([0-9]*\):"       ; code labels
-                 (let ((name (aref matches 0)))
-                   ;; print data into preamble
-                   (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
-                   (setf last-label name)
-                   (setf jump-count 0)
-                   ;; return tracing code
-                   (cons line (print-trace name))))
+                (code-label-rx          ; code labels
+                 ;; print data into preamble
+                 (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
+                 (setf last-label name)
+                 (setf jump-count 0)
+                 ;; return tracing code
+                 (cons line (print-trace name)))
                 (x86-control-flow-rx    ; control flow instructions
-                 (let ((name (format nil "~aJ~d" last-label jump-count)))
-                   ;; print data into preamble
-                   (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
-                   (incf jump-count)
-                   ;; return tracing code
-                   (cons line (print-trace name))))
-                (:default (list line)))) ; all other lines
-            (with-open-file (in input-file)
-              (loop :for line = (read-line in nil :eof) :as index :from 0
-                 :until (eq line :eof)
-                 :collect (cons index line))))))))
+                 (setf name (format nil "~aJ~d" last-label jump-count)
+                       jump-count (1+ jump-count))
+                 ;; print data into preamble
+                 (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
+                 (cons line (print-trace name)))
+                (t (list line))))       ; all other lines
+            asm-lines)))))
     (format stream "~%")))
+
+(defun propagate (asm-lines c-counts)
+  "Propagate COUNTS through ASM-LINES."
+  (let ((last-label "")
+        (jump-count 0)
+        (last-count 0)
+        (results (make-array (length asm-lines)
+                             :initial-element 0 :element-type 'integer))
+        d-counts)
+    ;; apply counts to the code lines
+    (loop :for (line-num . line) :in asm-lines :do
+       (re-cond line
+         (code-label-rx                 ; code labels
+          (setf last-label name
+                jump-count 0
+                last-count (or (car (rassoc name c-counts :test #'string=)) 0))
+          (incf (aref results line-num) last-count))
+         (x86-control-flow-rx           ; control flow instructions
+          (incf (aref results line-num) last-count)
+          (setf name (format nil "~aJ~d" last-label jump-count)
+                jump-count (1+ jump-count)
+                last-count (or (car (rassoc name c-counts :test #'string=)) 0)))
+         (data-reference-rx             ; data reference
+          (unless (zerop last-count)
+            (incf (aref results line-num) last-count)
+            (if (rassoc name d-counts :test #'string=)
+                (incf (car (rassoc name d-counts :test #'string=)) last-count)
+                (push (cons last-count name) d-counts))))
+         (t                             ; all other lines
+          (unless (zerop last-count)
+            (incf (aref results line-num) last-count)))))
+    ;; apply counts to the data lines
+    (loop :for (line-num . line) :in asm-lines :do
+       (re-cond line
+         (data-label-rx                 ; data labels
+          (setf last-count (or (car (rassoc name d-counts :test #'string=)) 0))
+          (incf (aref results line-num) last-count))
+         (t (unless (zerop last-count)
+              (incf (aref results line-num) last-count)))))
+    (coerce results 'list)))
 
 
 ;;; Executable
@@ -123,12 +173,11 @@ The special variable MATCH is bound to the match data"
 
 Actions:
  inst --------------- instrument ASM.s
- apply -------------- apply trace to ASM.s
+ prop --------------- propagate trace counts through ASM.s
 
 Options:
  -h,--help ---------- print this help message and exit
- -t,--trace FILE ---- save traces in FILE (default trace.out)
- -o,--out FILE ------ write instrumented asm to FILE~%")
+ -t,--trace FILE ---- save traces in FILE (default trace.out)~%")
         (self (pop args)))
     (when (or (not args)
               (string= (subseq (car args) 0 2) "-h")
@@ -139,13 +188,22 @@ Options:
            (input (pop args))
            ;; options
            (trace-out "trace.out")
-           (inst-out (make-pathname
-                      :name (concatenate 'string (pathname-name input) "-trace")
-                      :type (pathname-type input))))
+           (trace-counts "trace.counts"))
+
       (getopts
-       ("-t" "--trace" (setf trace-out (pop args)))
-       ("-o" "--out"   (setf inst-out (pop args))))
+       ("-t" "--trace" (setf trace-out (pop args))))
 
       (ecase action
-        (inst (instrument input trace-out))
-        (apply (format t "applying ~a to ~a~%" trace-out input))))))
+        (inst (instrument (indexed-file-lines input) trace-out))
+        (prop
+         (let ((counts
+                (with-open-file (in trace-counts)
+                  (loop :for l = (read-line in nil :eof) :until (eq l :eof)
+                     :collect
+                     (multiple-value-bind (match-p matches)
+                         (scan-to-strings "\\s*(\\S+)\\s+(\\S+)" l)
+                       (assert match-p (l) "malformed count-file line ~S" l)
+                       (cons (parse-integer (aref matches 0))
+                             (aref matches 1)))))))
+           (format t "~{~a~^~%~}~%"
+                   (propagate (indexed-file-lines input) counts))))))))

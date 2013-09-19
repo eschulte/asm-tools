@@ -4,10 +4,11 @@ SHELL=bash
 check-plain: plain.inst
 	@ printf "\e[1;1m$^\t"
 	@ if diff -q <(./$^; cat trace.out) <(echo -e "right 3\nJ0\nJ1\n3");then \
-	printf "\e[1;1m\e[1;32mPASS\e[1;0m\n"; \
+	printf "\e[1;1m\e[1;32mPASS\e[1;0m\t"; \
 	else \
-	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\n"; \
+	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\t"; \
 	fi
+	@cat trace.out|sort|uniq -c >trace.counts
 
 check-w-func: w-func.inst
 	@ printf "\e[1;1m$^\t"
@@ -27,3 +28,6 @@ check-w-func: w-func.inst
 	@$(CC) -o $@ $^
 
 check: check-plain check-w-func
+
+clean:
+	rm -f  *.s *.inst plain w-func trace.out trace.counts
