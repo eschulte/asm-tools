@@ -24,6 +24,9 @@ asm-trace: asm-trace.lisp
 check: $(INST)
 	$(MAKE) -C examples/ $(MAKECMDGOALS)
 
+view: $(INST)
+	$(MAKE) -C examples/ $(MAKECMDGOALS)
+
 clean:
 	rm -f asm-trace *.fasl *.lx32fsl dumper-*.lisp
 	$(MAKE) -C examples/ $(MAKECMDGOALS)

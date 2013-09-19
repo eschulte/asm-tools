@@ -22,3 +22,8 @@ file named `trace.out' every time the label is executed.
     $ cat trace.out
     6
     1
+
+Run "make check" to build and confirm functionality.
+
+Run "make view" to build and display annotations alongside the
+original assembler.

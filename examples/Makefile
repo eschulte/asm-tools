@@ -29,6 +29,16 @@ check-w-func: w-func.inst w-func.s
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\n"; \
 	fi
 
+view-plain: plain.inst plain.s
+	./$< >/dev/null
+	cat trace.out|sort|uniq -c >trace.counts
+	paste <(../asm-trace prop plain.s) plain.s
+
+view-w-func: w-func.inst w-func.s
+	./$< >/dev/null
+	cat trace.out|sort|uniq -c >trace.counts
+	paste <(../asm-trace prop w-func.s) w-func.s
+
 %.s: %.c
 	@$(CC) -o $@ -S $^
 
@@ -41,6 +51,8 @@ check-w-func: w-func.inst w-func.s
 check: check-plain check-w-func
 	@printf "\e[1;1m--------------------------------\n"
 	@printf "program         inst    prop\e[1;0m\n"
+
+view: view-plain view-w-func
 
 clean:
 	rm -f  *.s *.inst plain w-func trace.out trace.counts
