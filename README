@@ -6,6 +6,7 @@ label in  the assembler file is  instrumented to print it's  name to a
 file named `trace.out' every time the label is executed.
 
     # Compile the program and view the code labels
+    $ cd examples/
     $ gcc -S w-func.c
     $ grep "^\.L[0-9]" w-func.s
     .L2:
@@ -27,3 +28,62 @@ Run "make check" to build and confirm functionality.
 
 Run "make view" to build and display annotations alongside the
 original assembler.
+
+    # View annotations alongside the original assembler
+    #     NOTE: data and code portions are traced
+    $ cd examples/
+    $ make view-plain
+    ./plain.inst >/dev/null
+    cat trace.out|sort|uniq -c >trace.counts
+    paste <(../asm-trace prop plain.s) plain.s
+    0               .file   "plain.c"
+    0               .section        .rodata
+    1       .LC0:
+    1               .string "right %d\n"
+    0       .LC1:
+    0               .string "left  %d\n"
+    0               .text
+    0               .globl  main
+    0               .type   main, @function
+    0       main:
+    1       .LFB0:
+    1               .cfi_startproc
+    1               pushq   %rbp
+    1               .cfi_def_cfa_offset 16
+    1               .cfi_offset 6, -16
+    1               movq    %rsp, %rbp
+    1               .cfi_def_cfa_register 6
+    1               subq    $32, %rsp
+    1               movl    %edi, -20(%rbp)
+    1               movq    %rsi, -32(%rbp)
+    1               movl    $1, -4(%rbp)
+    1               movl    $2, -8(%rbp)
+    1               movl    -8(%rbp), %eax
+    1               cmpl    -4(%rbp), %eax
+    1               jle     .L2
+    1               movl    -8(%rbp), %eax
+    1               movl    -4(%rbp), %edx
+    1               addl    %edx, %eax
+    1               movl    %eax, %esi
+    1               movl    $.LC0, %edi
+    1               movl    $0, %eax
+    1               call    printf
+    1               jmp     .L3
+    0       .L2:
+    0               movl    -8(%rbp), %eax
+    0               movl    -4(%rbp), %edx
+    0               addl    %edx, %eax
+    0               movl    %eax, %esi
+    0               movl    $.LC1, %edi
+    0               movl    $0, %eax
+    0               call    printf
+    1       .L3:
+    1               movl    $0, %eax
+    1               leave
+    1               .cfi_def_cfa 7, 8
+    1               ret
+    0               .cfi_endproc
+    0       .LFE0:
+    0               .size   main, .-main
+    0               .ident  "GCC: (GNU) 4.8.1 20130725 (prerelease)"
+    0               .section        .note.GNU-stack,"",@progbits

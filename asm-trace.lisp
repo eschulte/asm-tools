@@ -44,6 +44,8 @@ The special variable MATCH is bound to the match data"
 
 (defvar code-label-rx "\\.L([0-9]*):")
 
+(defvar function-beginning-rx "\\.L(FB[0-9]*):")
+
 (defvar data-label-rx "\\.L([^0-9]\\S*):")
 
 (defvar data-reference-rx "\\$\\.L([^,\s]+)")
@@ -56,7 +58,6 @@ The special variable MATCH is bound to the match data"
 
 (defun instrument (asm-lines trace-out &key (stream t))
   "Instrument ASM-LINES to write an execution trace to TRACE-OUT."
-  ;; TODO: trace function lines
   (let ((last-label "")
         (jump-count 0)
         (regs '(rax rbx rcx rdx rsi rdi rbp rsp r8 r9 r10 r11 r12 r13 r14 r15)))
@@ -93,6 +94,13 @@ The special variable MATCH is bound to the match data"
             (lambda-bind ((line-num . line))
               (declare (ignorable line-num))
               (re-cond line
+                (function-beginning-rx  ; function labels
+                 ;; print data into preamble
+                 (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
+                 (setf last-label name)
+                 (setf jump-count 0)
+                 ;; return tracing code
+                 (cons line (print-trace name)))
                 (code-label-rx          ; code labels
                  ;; print data into preamble
                  (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
@@ -121,6 +129,11 @@ The special variable MATCH is bound to the match data"
     ;; apply counts to the code lines
     (loop :for (line-num . line) :in asm-lines :do
        (re-cond line
+         (function-beginning-rx         ; function labels
+          (setf last-label name
+                jump-count 0
+                last-count (or (car (rassoc name c-counts :test #'string=)) 0))
+          (incf (aref results line-num) last-count))
          (code-label-rx                 ; code labels
           (setf last-label name
                 jump-count 0

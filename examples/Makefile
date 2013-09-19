@@ -3,13 +3,13 @@ SHELL=bash
 
 check-plain: plain.inst plain.s
 	@printf "\e[1;1m$<\t"
-	@if diff -q <(./$<; cat trace.out) <(echo -e "right 3\nJ0\nJ1\n3");then \
+	@if diff -q <(./$<; cat trace.out) <(echo -e "right 3\nFB0\nFB0J0\nFB0J1\n3");then \
 	printf "\e[1;1m\e[1;32mPASS\e[1;0m\t"; \
 	else \
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\t"; \
 	fi
 	@cat trace.out|sort|uniq -c >trace.counts
-	@if [ $$($(INST) prop plain.s|grep -c 1) -eq 15 ];then \
+	@if [ $$($(INST) prop plain.s|grep -c 1) -eq 30 ];then \
 	printf "\e[1;1m\e[1;32mPASS\e[1;0m\n"; \
 	else \
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\n"; \
@@ -17,13 +17,13 @@ check-plain: plain.inst plain.s
 
 check-w-func: w-func.inst w-func.s
 	@printf "\e[1;1m$<\t"
-	@if diff -q <(./$<; cat trace.out) <(echo -e "right 3\nright in func 7\n1J1\n1J2\n6\nJ0\nJ1\n1\n6J0");then \
+	@if diff -q <(./$<; cat trace.out) <(echo -e "right 3\nright in func 7\nFB1\nFB1J0\nFB1J1\n6\nFB0\nFB0J0\nFB0J1\n1\n6J0");then \
 	printf "\e[1;32mPASS\e[1;0m\t"; \
 	else \
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\t"; \
 	fi
 	@cat trace.out|sort|uniq -c >trace.counts
-	@if [ $$($(INST) prop w-func.s|grep -c 1) -eq 31 ];then \
+	@if [ $$($(INST) prop w-func.s|grep -c 1) -eq 59 ];then \
 	printf "\e[1;1m\e[1;32mPASS\e[1;0m\n"; \
 	else \
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\n"; \
