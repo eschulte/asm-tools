@@ -1,6 +1,6 @@
 ;;; asm-trace.lisp --- Trace execution of GCC produced AT&T syntax assembler
 
-;; Copyright (C) Eric Schulte and Thomas Dye 2012-2013
+;; Copyright (C) 2013 Eric Schulte
 
 ;; Licensed under the Gnu Public License Version 3 or later
 
