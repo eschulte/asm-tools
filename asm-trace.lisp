@@ -189,33 +189,38 @@ The special variable MATCH is bound to the match data"
 
 (defun main (args)
   (in-package :asm-trace)
-  (let ((help "Usage: ~a ACTION ASM.s [OPTION...]
- Trace the execution of GCC produced AT&T syntax assembler
+  (let ((help "Usage: ~a ASM.s TRACEFILE [ACTION]
+ Trace AT&T syntax assembler produced by GCC
+
+Optional argument ACTION may be one of the following to
+force the action performed, the default action depends
+on the TRACEFILE.  Results are written to STDOUT.
 
 Actions:
- inst --------------- instrument ASM.s
- prop --------------- propagate trace counts through ASM.s
-
-Options:
- -h,--help ---------- print this help message and exit
- -t,--trace FILE ---- save traces in FILE (default trace.out)~%")
+ inst ------- instrument ASM.s to print a label trace
+              (run when TRACEFILE doesn't exist)
+ label ------ expand label trace to LOC trace
+              (run when TRACEFILE is label trace)
+ addr ------- expand address trace to LOC trace
+              (run when TRACEFILE is address trace)
+ prop ------- propagate LOC trace through ASM.s
+                      (run when TRACEFILE is line trace)~%")
         (self (pop args)))
-    (when (or (not args)
+    (when (or (not args) (< (length args) 2)
               (string= (subseq (car args) 0 2) "-h")
               (string= (subseq (car args) 0 3) "--h"))
       (format t help self) (quit))
 
-    (let* ((action (intern (string-upcase (pop args))))
-           (input (pop args))
-           ;; options
-           (trace-out "trace.out")
-           (trace-counts "trace.counts"))
-
-      (getopts
-       ("-t" "--trace" (setf trace-out (pop args))))
+    (let* ((asm-file (pop args))
+           (trace-file (pop args))
+           (action (or (pop args)
+                       (cond ; guess actions from contents of trace file
+                         ((not (probe-file trace-file)) 'inst)
+                         ;; TODO: more
+                         (())))))
 
       (ecase action
-        (inst (instrument (indexed-file-lines input) trace-out))
+        (inst (instrument (indexed-file-lines asm-file) trace-out))
         (prop
          (let ((counts
                 (with-open-file (in trace-counts)
@@ -227,4 +232,4 @@ Options:
                        (cons (parse-integer (aref matches 0))
                              (aref matches 1)))))))
            (format t "~{~a~^~%~}~%"
-                   (propagate (indexed-file-lines input) counts))))))))
+                   (propagate (indexed-file-lines asm-file) counts))))))))
