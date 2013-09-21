@@ -34,8 +34,6 @@ The special variable MATCH is bound to the match data"
 (defvar x86-control-flow-instructions
   '(;; jumps
     je jne jg jge ja jae jl jle jb jbe jo jz jnz
-    ;; function calls
-    call ret
     ;; loop
     loop loopx))
 
