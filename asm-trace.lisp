@@ -59,70 +59,71 @@ The special variable MATCH is bound to the match data"
        :until (eq line :eof)
        :collect (cons index line))))
 
-(defun instrument (asm-lines trace-out &key (stream t))
+(defun instrument (asm-lines trace-out &key (stream *standard-output*))
   "Instrument ASM-LINES to write an execution trace to TRACE-OUT."
   (let ((last-label "")
-        (jump-count 0)
-        (regs '(rax rbx rcx rdx rsi rdi rbp rsp r8 r9 r10 r11 r12 r13 r14 r15)))
-    (flet ((print-trace (name)
-             `(,@(mapcar [#'string-downcase {format nil "	pushq	%~a"}]
-                         regs)
-                 " 	movq	__tracer_fd(%rip), %rax"
-                 " 	testq	%rax, %rax"
-                 ,(format nil " 	jne	.TRACE~aALREADY" name)
-                 " 	movl	$.TRACE0, %esi"
-                 " 	movl	$.TRACE1, %edi"
-                 " 	call	fopen"
-                 " 	movq	%rax, __tracer_fd(%rip)"
-                 ,(format nil " .TRACE~aALREADY:" name)
-                 " 	movq	__tracer_fd(%rip), %rax"
-                 " 	movq	%rax, %rcx"
-                 ,(format nil " 	movl	$~a, %edx"
-                          (1+ (length name)))
-                 " 	movl	$1, %esi"
-                 ,(format nil " 	movl	$.TRACES~a, %edi" name)
-                 " 	call	fwrite"
-                 ,@(mapcar [#'string-downcase {format nil "	popq	%~a"}]
-                           (reverse regs)))))
-      (mapc
-       {apply #'format stream}
-       `(;; preamble
-         ("	.comm	__tracer_fd,8,8~%")
-         ("	.section	.rodata~%")
-         (".TRACE0:~%	.string \"w\"~%")
-         (".TRACE1:~%	.string \"~a\"~%" ,trace-out)
-         ;; body of the assembler file
-         ("~{~a~^~%~}"
-          ,(mapcan
-            (lambda-bind ((line-num . line))
-              (declare (ignorable line-num))
-              (re-cond line
-                (function-beginning-rx  ; function labels
-                 ;; print data into preamble
-                 (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
-                 (setf last-label name)
-                 (setf jump-count 0)
-                 ;; return tracing code
-                 (cons line (print-trace name)))
-                (code-label-rx          ; code labels
-                 ;; print data into preamble
-                 (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
-                 (setf last-label name)
-                 (setf jump-count 0)
-                 ;; return tracing code
-                 (cons line (print-trace name)))
-                (x86-control-flow-rx    ; control flow instructions
-                 (setf name (format nil "~aJ~d" last-label jump-count)
-                       jump-count (1+ jump-count))
-                 ;; print data into preamble
-                 (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
-                 ;; only trace conditional control flow instructions
-                 (if (member (intern (string-upcase (aref matches 0)))
-                             x86-unconditional-control-flow-instructions)
-                     (list line)
-                     (cons line (print-trace name))))
-                (t (list line))))       ; all other lines
-            asm-lines)))))
+        (jump-count 0))
+    ;; preamble
+    (let ((regs
+           '(rax rbx rcx rdx rsi rdi rbp rsp r8 r9 r10 r11 r12 r13 r14 r15)))
+      (mapc (lambda (line)
+              (write (concatenate 'string line (list #\Newline))
+                     :stream stream :escape nil))
+            `("	.macro __do_trace length, name"
+              ,@(mapcar [#'string-downcase {format nil "	pushq	%~a"}]
+                        regs)
+              " 	movq	__tracer_fd(%rip), %rax"
+              " 	testq	%rax, %rax"
+              " 	jne	.TRACEALREADY\\name"
+              " 	movl	$.TRACE0, %esi"
+              " 	movl	$.TRACE1, %edi"
+              " 	call	fopen"
+              " 	movq	%rax, __tracer_fd(%rip)"
+              " .TRACEALREADY\\name:"
+              " 	movq	__tracer_fd(%rip), %rax"
+              " 	movq	%rax, %rcx"
+              " 	movl	$\\length, %edx"
+              " 	movl	$1, %esi"
+              " 	movl	$.TRACES\\name, %edi"
+              " 	call	fwrite"
+              ,@(mapcar [#'string-downcase {format nil "	popq	%~a"}]
+                        (reverse regs))
+              "	.endm"
+              "	.comm	__tracer_fd,8,8"
+              "	.section	.rodata"
+              ".TRACE0:	.string \"w\""
+              ,(format nil ".TRACE1:~%	.string \"~a\"" trace-out))))
+    (flet ((print-trace (line name)
+             (list line (format nil "	__do_trace	~a, ~a"
+                                (1+ (length name)) name))))
+      (format stream "~{~a~^~%~}"
+              (mapcan
+               (lambda-bind ((line-num . line))
+                 (declare (ignorable line-num))
+                 (re-cond line
+                   (function-beginning-rx ; function labels
+                    (format stream ".TRACES~a:~%	.string \"~a\\n\"~%"
+                            name name)
+                    (setf last-label name)
+                    (setf jump-count 0)
+                    (print-trace line name))
+                   (code-label-rx       ; code labels
+                    (format stream ".TRACES~a:~%	.string \"~a\\n\"~%"
+                            name name)
+                    (setf last-label name)
+                    (setf jump-count 0)
+                    (print-trace line name))
+                   (x86-control-flow-rx ; control flow instructions
+                    (setf name (format nil "~aJ~d" last-label jump-count)
+                          jump-count (1+ jump-count))
+                    (format stream ".TRACES~a:~%	.string \"~a\\n\"~%"
+                            name name)
+                    (if (member (intern (string-upcase (aref matches 0)))
+                                x86-unconditional-control-flow-instructions)
+                        (list line)
+                        (print-trace line name)))
+                   (t (list line))))    ; all other lines
+               asm-lines)))
     (format stream "~%")))
 
 (defun propagate (asm-lines c-counts)

@@ -3,7 +3,7 @@ SHELL=bash
 
 check-plain: plain.inst plain.s
 	@printf "\e[1;1m$<\t"
-	@if diff -q <(./$<; cat trace.out) <(echo -e "right 3\nFB0\nFB0J0\nFB0J1\n3");then \
+	@if diff -q <(./$<; cat trace.out) <(echo -e "right 3\nFB0\nFB0J0\n3");then \
 	printf "\e[1;1m\e[1;32mPASS\e[1;0m\t"; \
 	else \
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\t"; \
@@ -17,7 +17,7 @@ check-plain: plain.inst plain.s
 
 check-w-func: w-func.inst w-func.s
 	@printf "\e[1;1m$<\t"
-	@if diff -q <(./$<; cat trace.out) <(echo -e "right 3\nright in func 7\nFB1\nFB1J0\nFB1J1\n6\nFB0\nFB0J0\nFB0J1\n1\n6J0");then \
+	@if diff -q <(./$<; cat trace.out) <(echo -e "right 3\nright in func 7\nFB1\nFB1J0\n6\nFB0\nFB0J0\n1");then \
 	printf "\e[1;32mPASS\e[1;0m\t"; \
 	else \
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\t"; \
