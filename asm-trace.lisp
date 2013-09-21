@@ -37,8 +37,13 @@ The special variable MATCH is bound to the match data"
     ;; loop
     loop loopx))
 
+(defvar x86-unconditional-control-flow-instructions
+  '(jmp ret))
+
 (defvar x86-control-flow-rx
-  (format nil "^	(~(~{~a~^|~}~))" x86-control-flow-instructions))
+  (format nil "^	(~(~{~a~^|~}~))"
+          (append x86-control-flow-instructions
+                  x86-unconditional-control-flow-instructions)))
 
 (defvar code-label-rx "\\.L([0-9]*):")
 
@@ -111,7 +116,11 @@ The special variable MATCH is bound to the match data"
                        jump-count (1+ jump-count))
                  ;; print data into preamble
                  (format stream ".TRACES~a:~%	.string \"~a\\n\"~%" name name)
-                 (cons line (print-trace name)))
+                 ;; only trace conditional control flow instructions
+                 (if (member (intern (string-upcase (aref matches 0)))
+                             x86-unconditional-control-flow-instructions)
+                     (list line)
+                     (cons line (print-trace name))))
                 (t (list line))))       ; all other lines
             asm-lines)))))
     (format stream "~%")))
