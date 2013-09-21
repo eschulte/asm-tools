@@ -1,6 +1,6 @@
                 Instrument AT&T Syntax Assembler Files
 
-Use asm-inst to instrument AT&T  syntax assembler files (such as those
+Use asm-trace to instrument AT&T syntax assembler files (such as those
 produced by "gcc -S") to save  a trace of their execution.  Every code
 label in  the assembler file is  instrumented to print it's  name to a
 file named `trace.out' every time the label is executed.
@@ -15,7 +15,7 @@ file named `trace.out' every time the label is executed.
     .L6:
 
     # Instrument the program
-    $ ./asm-inst w-func.s >w-func.inst.s
+    $ ./asm-trace w-func.s >w-func.inst.s
 
     # Run the instrumented program and view executed labels
     $ gcc -o w-func.inst w-func.inst.s 
