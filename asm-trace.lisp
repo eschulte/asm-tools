@@ -53,11 +53,13 @@ The special variable MATCH is bound to the match data"
 
 (defvar data-reference-rx "\\$\\.L([^,\s]+)")
 
-(defun indexed-file-lines (asm-file)
+(defun file-lines (asm-file)
   (with-open-file (in asm-file)
-    (loop :for line = (read-line in nil :eof) :as index :from 0
-       :until (eq line :eof)
-       :collect (cons index line))))
+    (loop :for line = (read-line in nil :eof) :until (eq line :eof)
+       :collect line)))
+
+(defun indexed (list)
+  (loop :for element :in list :as i :from 0 :collect (list i element)))
 
 (defun instrument (asm-lines trace-out &key (stream *standard-output*))
   "Instrument ASM-LINES to write an execution trace to TRACE-OUT."
@@ -98,8 +100,7 @@ The special variable MATCH is bound to the match data"
                                 (1+ (length name)) name))))
       (format stream "~{~a~^~%~}"
               (mapcan
-               (lambda-bind ((line-num . line))
-                 (declare (ignorable line-num))
+               (lambda (line)
                  (re-cond line
                    (function-beginning-rx ; function labels
                     (format stream ".TRACES~a:~%	.string \"~a\\n\"~%"
@@ -126,50 +127,71 @@ The special variable MATCH is bound to the match data"
                asm-lines)))
     (format stream "~%")))
 
-(defun propagate (asm-lines c-counts)
-  "Propagate COUNTS through ASM-LINES."
+(defun labels-to-loc (asm-lines label-counts)
+  "Convert LABEL-COUNTS to LOC counts."
   (let ((last-label "")
         (jump-count 0)
         (last-count 0)
-        (results (make-array (length asm-lines)
-                             :initial-element 0 :element-type 'integer))
+        (counts (make-array (length asm-lines)
+                            :initial-element 0 :element-type 'integer))
         d-counts)
     ;; apply counts to the code lines
-    (loop :for (line-num . line) :in asm-lines :do
+    (loop :for (line-num line) :in (indexed asm-lines) :do
        (re-cond line
          (function-beginning-rx         ; function labels
-          (setf last-label name
-                jump-count 0
-                last-count (or (car (rassoc name c-counts :test #'string=)) 0))
-          (incf (aref results line-num) last-count))
+          (setf
+           last-label name
+           jump-count 0
+           last-count (or (car (rassoc name label-counts :test #'string=)) 0))
+          (incf (aref counts line-num) last-count))
          (code-label-rx                 ; code labels
-          (setf last-label name
-                jump-count 0
-                last-count (or (car (rassoc name c-counts :test #'string=)) 0))
-          (incf (aref results line-num) last-count))
+          (setf
+           last-label name
+           jump-count 0
+           last-count (or (car (rassoc name label-counts :test #'string=)) 0))
+          (incf (aref counts line-num) last-count))
          (x86-control-flow-rx           ; control flow instructions
-          (incf (aref results line-num) last-count)
-          (setf name (format nil "~aJ~d" last-label jump-count)
-                jump-count (1+ jump-count)
-                last-count (or (car (rassoc name c-counts :test #'string=)) 0)))
+          (incf (aref counts line-num) last-count)
+          (setf
+           name (format nil "~aJ~d" last-label jump-count)
+           jump-count (1+ jump-count)
+           last-count (or (car (rassoc name label-counts :test #'string=)) 0)))
          (data-reference-rx             ; data reference
           (unless (zerop last-count)
-            (incf (aref results line-num) last-count)
+            (incf (aref counts line-num) last-count)
             (if (rassoc name d-counts :test #'string=)
                 (incf (car (rassoc name d-counts :test #'string=)) last-count)
                 (push (cons last-count name) d-counts))))
          (t                             ; all other lines
           (unless (zerop last-count)
-            (incf (aref results line-num) last-count)))))
-    ;; apply counts to the data lines
-    (loop :for (line-num . line) :in asm-lines :do
-       (re-cond line
-         (data-label-rx                 ; data labels
-          (setf last-count (or (car (rassoc name d-counts :test #'string=)) 0))
-          (incf (aref results line-num) last-count))
-         (t (unless (zerop last-count)
-              (incf (aref results line-num) last-count)))))
-    (coerce results 'list)))
+            (incf (aref counts line-num) last-count)))))
+    counts))
+
+(defun propagate (asm-lines loc-trace &aux d-counts)
+  "Propagate LOC-TRACE to referenced data portions of ASM-LINES."
+  ;; find all data labels used in loc-trace
+  (mapc (lambda (line count)
+          (re-cond line
+            (data-reference-rx          ; data reference
+             (unless (zerop count)
+               (if (rassoc name d-counts :test #'string=)
+                   (incf (car (rassoc name d-counts :test #'string=)) count)
+                   (push (cons count name) d-counts))))))
+        asm-lines (coerce loc-trace 'list))
+  ;; apply counts to the data sections
+  (let ((last-count 0)
+        (line-num 0))
+    (mapc (lambda (line)
+            (re-cond line
+              (data-label-rx                   ; data labels
+               (setf last-count
+                     (or (car (rassoc name d-counts :test #'string=)) 0))
+               (incf (aref loc-trace line-num) last-count))
+              (t (unless (zerop last-count)
+                   (incf (aref loc-trace line-num) last-count))))
+            (incf line-num))
+          asm-lines))
+  loc-trace)
 
 
 ;;; Executable
@@ -189,7 +211,7 @@ The special variable MATCH is bound to the match data"
 
 (defun main (args)
   (in-package :asm-trace)
-  (let ((help "Usage: ~a ASM.s TRACEFILE [ACTION]
+  (let ((help "Usage: ~a ASM.s TRACEFILE [ACTIONS...]
  Trace AT&T syntax assembler produced by GCC
 
 Optional argument ACTION may be one of the following to
@@ -199,37 +221,45 @@ on the TRACEFILE.  Results are written to STDOUT.
 Actions:
  inst ------- instrument ASM.s to print a label trace
               (run when TRACEFILE doesn't exist)
- label ------ expand label trace to LOC trace
+ label ------ expand label counts to LOC trace
               (run when TRACEFILE is label trace)
  addr ------- expand address trace to LOC trace
               (run when TRACEFILE is address trace)
  prop ------- propagate LOC trace through ASM.s
-                      (run when TRACEFILE is line trace)~%")
+              (run when TRACEFILE is line trace)~%")
         (self (pop args)))
     (when (or (not args) (< (length args) 2)
               (string= (subseq (car args) 0 2) "-h")
               (string= (subseq (car args) 0 3) "--h"))
       (format t help self) (quit))
 
-    (let* ((asm-file (pop args))
+    (let* ((asm-lines (file-lines (pop args)))
            (trace-file (pop args))
-           (action (or (pop args)
-                       (cond ; guess actions from contents of trace file
-                         ((not (probe-file trace-file)) 'inst)
-                         ;; TODO: more
-                         (())))))
+           (actions (mapcar [#'intern #'string-upcase] args))
+           (results
+            ;; apply actions
+            (reduce
+             (lambda (inputs action)
+               (ecase action
+                 (inst  (instrument asm-lines trace-file))
+                 (label (labels-to-loc asm-lines inputs))
+                 (addr  (error "TODO: implement address parsing"))
+                 (prop  (propagate asm-lines inputs))))
+             actions
+             ;; read input file
+             :initial-value
+             (ecase (car actions)
+               (inst nil)
+               (label
+                (mapcar
+                 (lambda (line)
+                   (multiple-value-bind (match-p matches)
+                       (scan-to-strings "\\s*(\\S+)\\s+(\\S+)" line)
+                     (assert match-p (line) "bad label TRACEFILE line ~S" line)
+                     (cons (parse-integer (aref matches 0)) (aref matches 1))))
+                 (file-lines trace-file)))
+               (addr (error "TODO: implement address parsing"))
+               (prop (mapcar #'parse-integer (file-lines trace-file)))))))
 
-      (ecase action
-        (inst (instrument (indexed-file-lines asm-file) trace-out))
-        (prop
-         (let ((counts
-                (with-open-file (in trace-counts)
-                  (loop :for l = (read-line in nil :eof) :until (eq l :eof)
-                     :collect
-                     (multiple-value-bind (match-p matches)
-                         (scan-to-strings "\\s*(\\S+)\\s+(\\S+)" l)
-                       (assert match-p (l) "malformed count-file line ~S" l)
-                       (cons (parse-integer (aref matches 0))
-                             (aref matches 1)))))))
-           (format t "~{~a~^~%~}~%"
-                   (propagate (indexed-file-lines asm-file) counts))))))))
+      ;; print final results
+      (format t "~{~a~^~%~}~%" (coerce results 'list)))))

@@ -9,7 +9,7 @@ check-plain: plain.inst plain.s
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\t"; \
 	fi
 	@cat trace.out|sort|uniq -c >trace.counts
-	@if [ $$($(INST) prop plain.s|grep -c 1) -eq 30 ];then \
+	@if [ $$($(INST) plain.s trace.counts label prop|grep -c 1) -eq 30 ];then \
 	printf "\e[1;1m\e[1;32mPASS\e[1;0m\n"; \
 	else \
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\n"; \
@@ -23,7 +23,7 @@ check-w-func: w-func.inst w-func.s
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\t"; \
 	fi
 	@cat trace.out|sort|uniq -c >trace.counts
-	@if [ $$($(INST) prop w-func.s|grep -c 1) -eq 59 ];then \
+	@if [ $$($(INST) w-func.s trace.counts label prop|grep -c 1) -eq 59 ];then \
 	printf "\e[1;1m\e[1;32mPASS\e[1;0m\n"; \
 	else \
 	printf "\e[1;1m\e[1;31mFAIL\e[1;0m\n"; \
@@ -32,18 +32,18 @@ check-w-func: w-func.inst w-func.s
 view-plain: plain.inst plain.s
 	./$< >/dev/null
 	cat trace.out|sort|uniq -c >trace.counts
-	paste <(../asm-trace prop plain.s) plain.s
+	paste <(../asm-trace plain.s trace.counts label prop) plain.s
 
 view-w-func: w-func.inst w-func.s
 	./$< >/dev/null
 	cat trace.out|sort|uniq -c >trace.counts
-	paste <(../asm-trace prop w-func.s) w-func.s
+	paste <(../asm-trace w-func.s trace.counts label prop) w-func.s
 
 %.s: %.c
 	@$(CC) -o $@ -S $^
 
 %.inst.s: %.s
-	@$(INST) inst $^ > $@
+	@$(INST) $^ trace.out inst > $@
 
 %: %.s
 	@$(CC) -o $@ $^

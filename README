@@ -15,12 +15,12 @@ file named `trace.out' every time the label is executed.
     .L6:
 
     # Instrument the program
-    $ ./asm-trace w-func.s >w-func.inst.s
+    $ ./asm-trace w-func.s w-funcs.out inst >w-func.inst.s
 
     # Run the instrumented program and view executed labels
     $ gcc -o w-func.inst w-func.inst.s 
     $ ./w-func.inst >/dev/null
-    $ cat trace.out
+    $ cat w-funcs.out
     6
     1
 
@@ -35,7 +35,7 @@ original assembler.
     $ make view-plain
     ./plain.inst >/dev/null
     cat trace.out|sort|uniq -c >trace.counts
-    paste <(../asm-trace prop plain.s) plain.s
+    paste <(../asm-trace plain.s trace.counts label prop) plain.s
     0               .file   "plain.c"
     0               .section        .rodata
     1       .LC0:
@@ -87,3 +87,4 @@ original assembler.
     0               .size   main, .-main
     0               .ident  "GCC: (GNU) 4.8.1 20130725 (prerelease)"
     0               .section        .note.GNU-stack,"",@progbits
+    rm plain.inst.s
