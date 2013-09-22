@@ -223,8 +223,6 @@ Actions:
               (run when TRACEFILE doesn't exist)
  label ------ expand label counts to LOC trace
               (run when TRACEFILE is label trace)
- addr ------- expand address trace to LOC trace
-              (run when TRACEFILE is address trace)
  prop ------- propagate LOC trace through ASMFILE
               (run when TRACEFILE is line trace)~%")
         (self (pop args)))
@@ -243,7 +241,6 @@ Actions:
                (ecase action
                  (inst  (instrument asm-lines trace-file))
                  (label (labels-to-loc asm-lines inputs))
-                 (addr  (error "TODO: implement address parsing"))
                  (prop  (propagate asm-lines inputs))))
              actions
              ;; read input file
@@ -258,7 +255,6 @@ Actions:
                      (assert match-p (line) "bad label TRACEFILE line ~S" line)
                      (cons (parse-integer (aref matches 0)) (aref matches 1))))
                  (file-lines trace-file)))
-               (addr (error "TODO: implement address parsing"))
                (prop (mapcar #'parse-integer (file-lines trace-file)))))))
 
       ;; print final results
