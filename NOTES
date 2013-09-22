@@ -71,6 +71,8 @@ The second =PREFIX= argument determines the type of the label.
 | LBB                    | block begin label                   |
 | LBE                    | block end label                     |
 | LM                     | line code label                     |
+* assembler pseudo-ops
+http://sourceware.org/binutils/docs-2.20/as/
 
 * spread counts along the file
 Convert raw samples to counts.
