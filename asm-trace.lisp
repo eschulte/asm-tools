@@ -211,21 +211,21 @@ The special variable MATCH is bound to the match data"
 
 (defun main (args)
   (in-package :asm-trace)
-  (let ((help "Usage: ~a ASM.s TRACEFILE [ACTIONS...]
- Trace AT&T syntax assembler produced by GCC
+  (let ((help "Usage: ~a ASMFILE TRACEFILE [ACTIONS...]
+Trace AT&T syntax assembler produced by GCC
 
 Optional argument ACTION may be one of the following to
 force the action performed, the default action depends
 on the TRACEFILE.  Results are written to STDOUT.
 
 Actions:
- inst ------- instrument ASM.s to print a label trace
+ inst ------- instrument ASMFILE to print a trace
               (run when TRACEFILE doesn't exist)
  label ------ expand label counts to LOC trace
               (run when TRACEFILE is label trace)
  addr ------- expand address trace to LOC trace
               (run when TRACEFILE is address trace)
- prop ------- propagate LOC trace through ASM.s
+ prop ------- propagate LOC trace through ASMFILE
               (run when TRACEFILE is line trace)~%")
         (self (pop args)))
     (when (or (not args) (< (length args) 2)
