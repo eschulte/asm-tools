@@ -255,7 +255,8 @@ Actions:
                      (assert match-p (line) "bad label TRACEFILE line ~S" line)
                      (cons (parse-integer (aref matches 0)) (aref matches 1))))
                  (file-lines trace-file)))
-               (prop (mapcar #'parse-integer (file-lines trace-file)))))))
+               (prop (coerce (mapcar #'parse-integer (file-lines trace-file))
+                             'vector))))))
 
       ;; print final results
       (format t "~{~a~^~%~}~%" (coerce results 'list)))))
