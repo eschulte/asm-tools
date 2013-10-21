@@ -69,6 +69,23 @@ The special variable MATCH is bound to the match data"
 (defun indexed (list)
   (loop :for element :in list :as i :from 0 :collect (list i element)))
 
+(defun parse-number (string)
+  "Parse the number located at the front of STRING or return an error."
+  (let ((number-str
+         (or (multiple-value-bind (whole matches)
+                 (scan-to-strings
+                  "^(-?.?[0-9]+(/[-e0-9]+|\.[-e0-9]+)?)([^\./A-Xa-x_-]$|$)"
+                  string)
+               (declare (ignorable whole))
+               (when matches (aref matches 0)))
+             (multiple-value-bind (whole matches)
+                 (scan-to-strings "0([xX][0-9A-Fa-f]+)([^./]|$)"
+                                  string)
+               (declare (ignorable whole))
+               (when matches (concatenate 'string "#" (aref matches 0)))))))
+    (assert number-str (string) "String ~S doesn't specify a number." string)
+    (read-from-string number-str)))
+
 (defun instrument (asm-lines trace-out &key (stream *standard-output*))
   "Instrument ASM-LINES to write an execution trace to TRACE-OUT."
   (let ((last-label "")
@@ -263,7 +280,7 @@ Actions:
                      (assert match-p (line) "bad label TRACEFILE line ~S" line)
                      (cons (parse-integer (aref matches 0)) (aref matches 1))))
                  (file-lines trace-file)))
-               (prop (coerce (mapcar #'parse-integer (file-lines trace-file))
+               (prop (coerce (mapcar #'parse-number (file-lines trace-file))
                              'vector))))))
 
       ;; print final results
