@@ -53,10 +53,18 @@ The special variable MATCH is bound to the match data"
 
 (defvar data-reference-rx "\\$\\.L([^,\s]+)")
 
-(defun file-lines (asm-file)
-  (with-open-file (in asm-file)
-    (loop :for line = (read-line in nil :eof) :until (eq line :eof)
-       :collect line)))
+(defun unsafe-open (native)
+  "An unsafe open which doesn't check existence for /proc/*/fd/* files."
+  #+sbcl
+  (sb-impl::make-fd-stream (sb-unix:unix-open native sb-unix:o_rdonly #o666))
+  #+ccl
+  (ccl::make-fd-stream (ccl::fd-open native #$O_RDONLY)))
+
+(defun file-lines (file)
+  (let ((in (unsafe-open file)))
+    (prog1 (loop :for line = (read-line in nil nil) :while line
+              :collect line)
+      (close in))))
 
 (defun indexed (list)
   (loop :for element :in list :as i :from 0 :collect (list i element)))
