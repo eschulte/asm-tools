@@ -10,5 +10,4 @@
 
 END {
     for(i=0;i<=max;i++) {
-        if(loc[i]) {it=loc[i]} else {it=0}
-        print i, it; } }
+        if(loc[i]) { print loc[i]} else {print 0}; } }
