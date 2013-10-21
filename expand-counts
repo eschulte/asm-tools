@@ -1,0 +1,14 @@
+#!/usr/sbin/awk -f
+#
+# Read input of the form "NUM TRACE" and print NUM lines with the
+# corresponding trace of "0" on each line.
+#
+
+{
+    loc[$1]=$2;
+    if($1>max) {max=$1}; }
+
+END {
+    for(i=0;i<=max;i++) {
+        if(loc[i]) {it=loc[i]} else {it=0}
+        print i, it; } }
