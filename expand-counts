@@ -9,5 +9,5 @@
     if($1>max) {max=$1}; }
 
 END {
-    for(i=0;i<=max;i++) {
+    for(i=1;i<=max;i++) {
         if(loc[i]) { print loc[i]} else {print 0}; } }
