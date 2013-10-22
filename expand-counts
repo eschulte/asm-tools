@@ -3,11 +3,19 @@
 # Read input of the form "NUM TRACE" and print NUM lines with the
 # corresponding trace of "0" on each line.
 #
+# Optional argument specifies minimum number of lines to print.
+#
+BEGIN {
+    if(ARGV[1] ~ /[0-9]+/) {
+        max = ARGV[1]
+        ARGV[1] = "-" }
+    else {
+        max = 0 } }
 
 {
-    loc[$1]=$2;
-    if($1>max) {max=$1}; }
+    loc[$1]=$2
+    if($1>max) {max=$1} }
 
 END {
     for(i=1;i<=max;i++) {
-        if(loc[i]) { print loc[i]} else {print 0}; } }
+        if(loc[i]) { print loc[i]} else {print 0} } }
