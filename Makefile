@@ -16,6 +16,10 @@ BUILD_APP_FLAGS=--manifest-file $(QUICK_LISP)/local-projects/system-index.txt \
 	--eval "(setf *debugger-hook* $(QUIT))" \
 	--load-system asm-trace
 
+ifneq ($(LISP_STACK),)
+BUILD_APP_FLAGS+= --dynamic-space-size $(LISP_STACK)
+endif
+
 asm-trace: asm-trace.lisp
 	$(BA) $(BUILD_APP_FLAGS) --output $@ --entry "asm-trace:main"
 
