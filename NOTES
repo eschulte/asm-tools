@@ -1,0 +1,146 @@
+                                                           -*- org -*-
+* Notes
+** x86 Flags
+|   bit | name | meaning                         | type    |
+|-------+------+---------------------------------+---------|
+|     0 | CF   | Carry flag                      | Status  |
+|     1 | 1    | Reserved                        |         |
+|     2 | PF   | Parity flag                     | Status  |
+|     3 | 0    | Reserved                        |         |
+|     4 | AF   | Adjust flag                     | Status  |
+|     5 | 0    | Reserved                        |         |
+|     6 | ZF   | Zero flag                       | Status  |
+|     7 | SF   | Sign flag                       | Status  |
+|     8 | TF   | Trap flag (single step)         | Control |
+|     9 | IF   | Interrupt enable flag           | Control |
+|    10 | DF   | Direction flag                  | Control |
+|    11 | OF   | Overflow flag                   | Status  |
+| 12-13 | IOPL | I/O privilege level (286+ only) | System  |
+|       |      | always 1 on 8086 and 186        |         |
+|    14 | NT   | Nested task flag (286+ only)    | System  |
+|       |      | always 1 on 8086 and 186        |         |
+|    15 | 0    | Reserved                        |         |
+|       |      | always 1 on 8086 and 186        |         |
+|       |      | always 0 on later models        |         |
+
+** comparison operations
+- cmpl :: signals a jump if SF == OF, and ZF is 0.  So this could be
+          changed by changing the value of SF.
+
+** code snippets
+*** stochastic comparison swap
+Note that a relative jump address must be used because we're in a
+macro.  I don't know why =.+12= works, but according to gdb it does.
+
+#+begin_src asm :tangle etc/stochastic-flip.s
+          .macro  swapcmp first, second
+          call    rand
+          cmp     $127, %ah
+          ja      .+12
+          xor     \first, \second
+          xor     \second, \first
+          xor     \first, \second
+          cmp     \first, \second
+          .endm
+  .text
+  .global main
+  
+  main:
+          mov     $0, %rdi
+          call    time
+          mov     %rax, %rdi
+          call    srand
+          mov     $1, %rax
+          mov     $2, %rbx
+          swapcmp     %rax,%rbx
+          jge     .yes
+          mov     $0, %eax
+          ret
+  .yes:
+          mov $1, %eax
+          ret
+#+end_src
+
+*** better way to change a comparison
+Simply swaps the order of arguments to =cmp=.
+#+begin_src asm
+  .macro  swapcmp first, second
+  xor     \first, \second         # swap the two arguments
+  xor     \second, \first
+  xor     \first, \second
+  cmp     \first, \second         # perform the comparison
+  .endm
+#+end_src
+
+*** change the value of SF after a comparison
+#+begin_src asm
+  .text
+  .global main
+  
+  main:
+          mov     $1, %rax
+          mov     $9, %rbx
+          cmp     %rax,%rbx
+  ## and then change SF
+          mov     $1, %rbx
+          shl     $7, %rbx # set the SF bit to 1 in rbx
+          pushf
+          popq    %rax     # pull flags into rax
+          orq     %rbx, %rax # set SF high
+          notq    %rbx
+          andq    %rbx, %rax # set SF low
+          pushq   %rax
+          popf # reset in flags
+          ret
+#+end_src
+*** macro to change SF bit to argument
+#+begin_src asm
+        .macro jdo predicate
+        pushf                     # put flags on the stack
+        popq    %rax              # pull flags into rax
+        mov     $\predicate, %rbx # set the SF bit to predicate in rbx
+        shl     $7, %rbx          #
+        orq     %rbx, %rax        # set SF bit to itself or predicate
+        mov     $1, %rcx          # everything but SF bit on in rcx
+        shl     $7, %rcx          #
+        notq    %rcx              #
+	xorq    %rcx, %rbx        # all other bits on in rbx
+        andq    %rbx, %rax        # set SF low
+        pushq   %rax              #
+        popf                      # reset in flags
+        .endm
+#+end_src
+
+*** random jump
+#+begin_src asm
+    mov $0, %rdi
+    call time
+    mov %rax, %rdi
+    call srand
+    call rand 
+    cmp $127, %ah
+    ja big
+  little:
+    mov $1, %eax
+    ret
+  big:
+    mov $0, %eax
+    ret
+#+end_src
+
+*** shifting bits
+#+begin_src asm
+          mov $1, %eax
+          shl $4, %eax
+          ret
+#+end_src
+
+*** C stuff
+#+begin_src C
+  unsigned int this=1<<8;
+  printf("%u\n", this);
+#+end_src
+
+#+RESULTS:
+: 256
+

@@ -1,0 +1,10 @@
+                                  ur
+                    make x86 assembler unreliable
+
+SYNOPSIS
+    ur [OPTION]... [INPUT-ASM-FILE]
+
+DESCRIPTION
+    Transforms x86 assembler replacing specified instructions (e.g.,
+    cmpl) with unreliable counterparts which do the wrong thing with a
+    specified probability.
