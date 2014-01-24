@@ -1,5 +1,5 @@
 #!/bin/sed -f
-# -*- shell -*-
+# -*- sed -*-
 #
 # Copyright (C) 2014 Eric Schulte
 # Licensed under the Gnu Public License Version 3 or later

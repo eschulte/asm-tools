@@ -10,6 +10,5 @@ DESCRIPTION
     specified probability.
 
 EXAMPLE
-    $ cd etc/
-    $ make cmp-ur
-    $ for i in $(seq 10);do ./cmp-ur 1 2 3 4 5 6; sleep 1;done
+    $ gcc -S etc/cmp.c -o -|./ur|gcc -x assembler - -o /tmp/cmp
+    $ for i in $(seq 10);do /tmp/cmp 1 2 3 4 5 6; sleep 1;done
