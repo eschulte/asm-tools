@@ -8,3 +8,8 @@ DESCRIPTION
     Transforms x86 assembler replacing specified instructions (e.g.,
     cmpl) with unreliable counterparts which do the wrong thing with a
     specified probability.
+
+EXAMPLE
+    $ cd etc/
+    $ make cmp-ur
+    $ for i in $(seq 10);do ./cmp-ur 1 2 3 4 5 6; sleep 1;done

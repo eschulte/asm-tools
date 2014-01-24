@@ -10,11 +10,13 @@
 \t.macro  swapit cmd, first, second\
 \tcall    rand\
 \tcmp     $127, %ah\
-\tja      .+9\
-\txor     \\first, \\second\
-\txor     \\second, \\first\
-\txor     \\first, \\second\
+\tja      .+8\
 \t\\cmd   \\first, \\second\
+\tpushf\
+\tjmp     .+6\
+\t\\cmd   \\second, \\first\
+\tpushf\
+\tpopf\
 \t.endm
 
 # replace `cmp' with `swapcmp'
