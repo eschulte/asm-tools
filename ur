@@ -32,9 +32,15 @@ SED_CMD="1i\\
 \\tja      .+8\\
 \\t\\\\cmd   \\\\first, \\\\second\\
 \\tpushf\\
-\\tjmp     .+6\\
-\\t\\\\cmd   \\\\second, \\\\first\\
+\\tjmp     .+24\\
+\\txor     \\\\first, \\\\second\\
+\\txor     \\\\second, \\\\first\\
+\\txor     \\\\first, \\\\second\\
+\\t\\\\cmd   \\\\first, \\\\second\\
 \\tpushf\\
+\\txor     \\\\first, \\\\second\\
+\\txor     \\\\second, \\\\first\\
+\\txor     \\\\first, \\\\second\\
 \\tpopf\\
 \\t.endm
 "

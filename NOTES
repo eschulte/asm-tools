@@ -26,6 +26,55 @@
 ** comparison operations
 - cmpl :: signals a jump if SF == OF, and ZF is 0.  So this could be
           changed by changing the value of SF.
+** calculating jumps
+When really not sure, running something like the following (with no
+overly long function calls) in gdb with
+: break main
+: display/i $pc
+: run
+: stepi
+and then repeatedly =stepi='ing works well.
+
+#+begin_src asm
+	.macro  swapit cmd, first, second
+	mov     $250, %ah      # ja taken when >$229
+	cmp     $229, %ah
+	ja      .+8
+	\cmd   \first, \second
+	pushf
+	jmp     .+24
+	xor     \first, \second # <- ja .+8
+	xor     \second, \first # <- jmp .+6
+	xor     \first, \second
+	\cmd   \first, \second  # <- jmp .+12
+	xor     \first, \second # <- jmp .+14
+	xor     \second, \first # <- jmp .+17
+	xor     \first, \second # <- jmp .+20
+        ## unaligned jumps:
+        ## jmp .+16 -> retq
+	pushf                   # <- jmp .+23
+	popf                    # <- jmp .+24
+	.endm
+.text
+.global main
+
+main:
+	mov     $1, %rax
+	mov     $2, %rbx
+	mov     $3, %rcx
+        swapit  cmp, %rax, %rbx
+        pushf
+        jmp     .+6
+        swapit cmp, %rbx, %rax
+        pushf
+        popf
+        ja      big
+        mov     $0, %eax
+        ret
+big:
+        mov     $1, %eax
+        ret
+#+end_src
 
 ** code snippets
 *** stochastic comparison swap
@@ -144,3 +193,9 @@ Simply swaps the order of arguments to =cmp=.
 #+RESULTS:
 : 256
 
+* Tasks [0/3]
+** TODO Better random seeds
+include pid for multiple launches a second
+
+** TODO don't swap for every unreliable run
+rather if unreliable, then flip a coin to swap
