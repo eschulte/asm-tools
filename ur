@@ -25,22 +25,37 @@ while [ $# -gt 0 ];do
     shift
 done
 
+ADJUSTED=$(echo "scale=0;((1 - $RATE) * 255)/1"|bc)
+
 SED_CMD="1i\\
+\\
 \\t.macro  swapit cmd, first, second\\
 \\tcall    rand\\
-\\tcmp     \$$(echo "scale=0;((1 - $RATE) * 255)/1"|bc), %ah\\
+\\tcmp     \$$ADJUSTED, %ah\\
 \\tja      .+8\\
 \\t\\\\cmd   \\\\first, \\\\second\\
 \\tpushf\\
-\\tjmp     .+24\\
-\\txor     \\\\first, \\\\second\\
-\\txor     \\\\second, \\\\first\\
-\\txor     \\\\first, \\\\second\\
+\\tjmp     .+6\\
+\\t\\\\cmd   \\\\second, \\\\first\\
+\\tpushf\\
+\\t.endm\\
+\\
+# This second macro uses \reg to hold the first operand to \cmd,\\
+# necessary in case \first is not a register because the second\\
+# (i.e. \first after the swap) operand to many values of \cmd (e.g.,\\
+# cmpl) *must* be a register.\\
+\\
+\\t.macro  moveit reg, cmd, first, second\\
+\\tcall    rand\\
+\\tcmp     \$$ADJUSTED, %ah\\
+\\tja      .+9\\
 \\t\\\\cmd   \\\\first, \\\\second\\
 \\tpushf\\
-\\txor     \\\\first, \\\\second\\
-\\txor     \\\\second, \\\\first\\
-\\txor     \\\\first, \\\\second\\
+\\tjmp     .+26\\
+\\tpushl   \\\\reg\\
+\\t\\\\cmd   \\\\second, \\\\reg\\
+\\tpopl    \\\\reg\\
+\\tpushf\\
 \\tpopf\\
 \\t.endm
 "
