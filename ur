@@ -24,20 +24,21 @@ while [ $# -gt 0 ];do
     esac
     shift
 done
-ADJ=$(echo "scale=0;((1 - $RATE) * 255)/1"|bc)
+# 65535 is the maximum value in ax
+ADJ=$(echo "scale=0;((1 - $RATE) * 65535)/1"|bc)
 
 SED_CMD="1i\\
 $(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"
 	.macro ___mk_unreliable cmd, mask, first, second
 	push    %rax              # save original value of rax
 	call    rand              # place a random number in eax
-	cmp     $ADJ, %rax        # first 1/2 rand determines if unreliable
+	cmp     $ADJ, %ax         # first 1/2 rand determines if unreliable
 	ja      .+9               # jump to reliable or unreliable track
 	pop     %rax              # /-reliable track
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
 	jmp     .+51              # \-jump past unreliable track to popf
-	shr     $8, %eax          # discard 1/2 rand, and line up rest
+	shr     $16, %eax         # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
 	mov     24(%rsp), %rax    # bring original rax back for comparison
