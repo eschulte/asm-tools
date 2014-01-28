@@ -1,5 +1,8 @@
                                                            -*- org -*-
 * Notes
+** registers
+file:stuff/x86-registers.png
+
 ** x86 Flags
 |   bit | name | meaning                         | type    |
 |-------+------+---------------------------------+---------|
@@ -23,10 +26,53 @@
 |       |      | always 1 on 8086 and 186        |         |
 |       |      | always 0 on later models        |         |
 
+by instruction
+| instruction | changed flags     | changed bits | mask                     |       |
+|-------------+-------------------+--------------+--------------------------+-------|
+| cmpl        | AF CF OF PF SF ZF | 0 2 4 6 7 11 | 1 3 5 8 9 10 12 13 14 15 | 21743 |
+
 ** comparison operations
 - cmpl :: signals a jump if SF == OF, and ZF is 0.  So this could be
           changed by changing the value of SF.
-** calculating jumps
+
+** code snippets
+*** new version of macro
+#+begin_src asm
+.text
+.global main
+
+main:
+	mov     $1, %rax
+	call    rand
+# Use the low bits of rand output to check if randomization should
+# happen at all.
+	cmp     $229, %ah
+	ja      .+10
+	cmp     $2, %rax # Non-random path
+	pushf
+	jmp     .+6
+	shl     $4, %eax # discard used random bits, and line up unused
+	andl    $21743, %eax # zero out masked bits in random bits/flags
+	push    %rax         # save the random flags to the stack
+	cmp      $2, %rax
+	pushf
+	movq    $21743, %rax     # put the masked bits into eax
+	notq    %rax             # negate the mask bits
+	andq    %rax, (%esp)     # pull masked flags into eax
+	subl    $4, %esp         # pop flags, expose random bits
+	andq    %rax, (%esp)     # combine saved flags and random bits
+	subl    $4, %esp         # pop random, expose original eax
+	xchg    %rax, (%esp)     # swap eax and flags
+	popf
+        ja      big
+        mov     $0, %eax
+        ret
+big:
+        mov     $1, %eax
+        ret
+#+end_src
+
+*** calculating jumps
 When really not sure, running something like the following (with no
 overly long function calls) in gdb with
 : break main
@@ -76,7 +122,6 @@ big:
         ret
 #+end_src
 
-** code snippets
 *** stochastic comparison swap
 Note that a relative jump address must be used because we're in a
 macro.  I don't know why =.+12= works, but according to gdb it does.
