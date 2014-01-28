@@ -10,6 +10,7 @@
 	shr     $8, %eax          # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
+        mov     24(%rsp), %rax    # bring original rax back for comparison
 	\cmd    \first, \second   # perform the comparison
 	pushf                     # save the flags
 	mov     \mask, %rax       # put the masked bits into rax
