@@ -238,9 +238,7 @@ Simply swaps the order of arguments to =cmp=.
 #+RESULTS:
 : 256
 
-* Tasks [0/3]
+* Tasks [0/1]
 ** TODO Better random seeds
 include pid for multiple launches a second
 
-** TODO don't swap for every unreliable run
-rather if unreliable, then flip a coin to swap
