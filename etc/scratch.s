@@ -25,16 +25,16 @@
 .global main
 
 main:
-        mov     $0, %edi
-        call    time
-        mov     %eax, %edi
-        call    srand
+	mov     $0, %edi
+	call    time
+	mov     %eax, %edi
+	call    srand
 	mov     $35, %rax
 	mov     $1, %rbx
-        ___mk_unreliable cmp, $1, $2, %rbx
-        ja      big
-        mov     $0, %eax
-        ret
+	___mk_unreliable cmp, $1, $2, %rbx
+	ja      big
+	mov     $0, %eax
+	ret
 big:
-        mov     $1, %eax
-        ret
+	mov     $1, %eax
+	ret
