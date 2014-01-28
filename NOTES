@@ -1,8 +1,5 @@
                                                            -*- org -*-
 * Notes
-** registers
-file:stuff/x86-registers.png
-
 ** x86 Flags
 |   bit | name | meaning                         | type    |
 |-------+------+---------------------------------+---------|
@@ -31,23 +28,12 @@ by instruction
 |-------------+-------------------+--------------+--------+---------|
 | cmpl        | AF CF OF PF SF ZF | 0 2 4 6 7 11 | 0x08D5 |    2261 |
 
-example
-: [ CF PF AF SF IF ] -> 0x00000397
-: [ 0 1 2 4 7 8 9 ]  -> 0x00000397
-
-again
-: [ CF PF AF SF IF ] -> after compare -> 0x0397
-: [ PF AF ZF SF TF IF DF OF NT ] -> after exchange -> 0x0058fffe
-
 ** links
+- file:stuff/x86-registers.png
 - http://www.cs.virginia.edu/~evans/cs216/guides/x86.html
 - http://ref.x86asm.net/#HTML-Editions
 - https://www.cs.uaf.edu/2005/fall/cs301/support/x86/index.html
 - http://en.wikipedia.org/wiki/FLAGS_register
-
-** comparison operations
-- cmpl :: signals a jump if SF == OF, and ZF is 0.  So this could be
-          changed by changing the value of SF.
 
 ** code snippets
 *** new version of macro
