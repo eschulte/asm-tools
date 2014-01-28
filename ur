@@ -31,7 +31,7 @@ SED_CMD="1i\\
 $(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"
 	.macro ___mk_unreliable cmd, mask, first, second
 	push    %rax              # save original value of rax
-	call    rand              # place a random number in eax
+	call    random            # place a random number in eax
 	cmp     $ADJ, %ax         # first 1/2 rand determines if unreliable
 	ja      .+9               # jump to reliable or unreliable track
 	pop     %rax              # /-reliable track
