@@ -32,11 +32,11 @@ $(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"
 	push    %rax              # save original value of rax
 	call    rand              # place a random number in eax
 	cmp     $ADJ, %rax        # first 1/2 rand determines if unreliable
-	ja      .+10              # jump to reliable or unreliable track
+	ja      .+9               # jump to reliable or unreliable track
 	pop     %rax              # /-reliable track
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
-	jmp     .+45              # \-jump past unreliable track to popf
+	jmp     .+51              # \-jump past unreliable track to popf
 	shr     $8, %eax          # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
