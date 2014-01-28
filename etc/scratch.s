@@ -1,6 +1,6 @@
 	.macro ___mk_unreliable cmd, mask, first, second
 	push    %rax              # save original value of rax
-	mov     $1479682116, %eax # rand number to tweak flags
+        call    rand              # place a random number in eax
 	shr     $8, %eax          # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
@@ -19,6 +19,10 @@
 .global main
 
 main:
+        mov     $0, %edi
+        call    time
+        mov     %eax, %edi
+        call    srand
 	mov     $35, %rax
 	mov     $1, %rbx
         ___mk_unreliable cmp, $1, $2, %rbx
