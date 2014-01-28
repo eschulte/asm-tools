@@ -2,6 +2,7 @@
 .global main
 
 main:
+	mov     $35, %rax
 	mov     $1, %rbx
 ## Macro ostensibly start here with the following variables
 ## first -- $2
@@ -39,3 +40,6 @@ big:
 	## 0x7fffffffdef0 <- after add # pop random
 	## 0x7fffffffdef8 <- after popf
 
+	## Flag modification
+	## [ CF PF AF SF IF ] <- after comparison
+	## [ AF TF IF OF ]    <- after popf
