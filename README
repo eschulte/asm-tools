@@ -11,4 +11,4 @@ DESCRIPTION
 
 EXAMPLE
     $ gcc -S etc/printer.c -o -|./ur|gcc -x assembler - -o etc/printer-ur
-    $ for i in $(seq 300);do ./etc/printer-ur; sleep 1;done
+    $ for i in {0..1000};do ./etc/printer-ur;done|grep -c "1 > 2"
