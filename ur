@@ -26,14 +26,15 @@ while [ $# -gt 0 ];do
 done
 # 65535 is the maximum value in ax
 ADJ=$(echo "scale=0;((1 - $RATE) * 65535)/1"|bc)
-
-SED_CMD="1i\\
+SED_CMD="
+# the macro used to replace comparison instructions
+1i\\
 $(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"
 	.macro ___mk_unreliable cmd, mask, first, second
 	push    %rax              # save original value of rax
 	call    random            # place a random number in eax
 	cmp     $ADJ, %ax         # first 1/2 rand determines if unreliable
-	ja      .+9               # jump to reliable or unreliable track
+	jae     .+9               # jump to reliable or unreliable track
 	pop     %rax              # /-reliable track
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
@@ -55,7 +56,20 @@ $(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"
 EOF
 )
 \\t.endm
-s/\(^[[:space:]]\)\(cmp[^[:space:]]*\)\([[:space:]]*\)/\1___mk_unreliable\3\2, \$2261, /"
+
+# replace all comparison instructions with macro calls
+s/\(^[[:space:]]\)\(cmp[^[:space:]]*\)\([[:space:]]*\)/\1___mk_unreliable\3\2, \$2261, /
+
+# seed the random number generator before the first macro invocation
+0,/___mk_unreliable/{s/___mk_unreliable/push    %rdi\\
+        push    %rax\\
+        mov     \$0, %rdi\\
+	call    time\\
+	mov     %rax, %rdi\\
+	call    srandom\\
+        pop     %rax\\
+        pop     %rdi\\
+        ___mk_unreliable/}"
 
 sed $SED_OPTS "$SED_CMD" $@
 # echo "$SED_CMD"
