@@ -9,15 +9,15 @@
 HELP="Usage: $0 [OPTION]... [INPUT-ASM-FILE]
  Options:
   -r RATE ----------- set RATE of unreliable computation
-  -i[SUFFIX] -------- edit file in place (w/back if SUFFIX)"
-eval set -- $(getopt hir: "$@" || echo "$HELP" && exit 1;)
+  -i[SUFFIX] -------- edit file in place (optional backup at SUFFIX)"
+eval set -- $(getopt hi::r: "$@" || echo "$HELP" && exit 1;)
 RATE=0.1
 SED_OPTS=" "
 while [ $# -gt 0 ];do
     case $1 in
         -h)  echo "$HELP" && exit 0;;
         -r)  RATE=$2; shift;;
-        -i*) SED_OPTS+="$1 "; break;;
+        -i)  SED_OPTS+="$1$2"; shift;;
         (--) shift; break;;
         (-*) echo "$HELP" && exit 1;;
         (*)  break;;
