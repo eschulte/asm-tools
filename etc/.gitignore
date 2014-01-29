@@ -3,4 +3,5 @@
 !Makefile
 !cmp.c
 !scratch.s
+!two-cmp.s
 !printer.c
