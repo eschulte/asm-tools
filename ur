@@ -62,17 +62,17 @@ s/\(^[[:space:]]\)\(cmp[^[:space:]]*\)\([[:space:]]*\)/\1___mk_unreliable\3\2, \
 
 # seed the random number generator before the first macro invocation
 0,/___mk_unreliable/{s/___mk_unreliable/push    %rdi\\
-        push    %rax\\
-        mov     \$0, %rdi\\
+	push    %rax\\
+	mov     \$0, %rdi\\
 	call    time\\
 	mov     %rax, %rdi\\
 	mov     $0x14, %eax\\
 	int     $0x80
 	xor     %eax, %edi
 	call    srandom\\
-        pop     %rax\\
-        pop     %rdi\\
-        ___mk_unreliable/}"
+	pop     %rax\\
+	pop     %rdi\\
+	___mk_unreliable/}"
 
 sed $SED_OPTS "$SED_CMD" $@
 # echo "$SED_CMD"
