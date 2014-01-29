@@ -238,7 +238,7 @@ Simply swaps the order of arguments to =cmp=.
 #+RESULTS:
 : 256
 
-* Tasks [0/1]
-** TODO Better random seeds
+* Tasks [1/1]
+** DONE Better random seeds
 include pid for multiple launches a second
 
