@@ -6,7 +6,7 @@ main:
 	mov     $2, %rbx
 	mov     $3, %rcx
 	cmp     $3, %rax
-	cmp     $2, %rbx
+	cmp     %rax, %rbx
 	cmp     $1, %rcx
         ja      big
         mov     $0, %eax

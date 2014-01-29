@@ -34,11 +34,12 @@ $(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"
 	push    %rax              # save original value of rax
 	call    random            # place a random number in eax
 	cmp     $ADJ, %ax         # first 1/2 rand determines if unreliable
-	jae     .+9               # jump to reliable or unreliable track
+	jae     ___mk_ur_beg_\@   # jump to reliable or unreliable track
 	pop     %rax              # /-reliable track
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
-	jmp     .+51              # \-jump past unreliable track to popf
+	jmp     ___mk_ur_end_\@   # \-jump past unreliable track to popf
+___mk_ur_beg_\@:
 	shr     $16, %eax         # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
@@ -52,6 +53,7 @@ $(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"
 	or      (%rsp), %rax      # combine rand and saved flags
 	add     $8, %rsp          # pop rand, expose saved rax
 	xchg    (%rsp), %rax      # swap rax and flags, orig rax, flags on stack
+___mk_ur_end_\@:
 	popf                      # apply flags and restore stack
 EOF
 )
