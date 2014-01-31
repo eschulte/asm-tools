@@ -240,12 +240,13 @@ Simply swaps the order of arguments to =cmp=.
 #+RESULTS:
 : 256
 
-* Tasks [1/2]
+* Tasks [2/2]
 ** DONE Better random seeds
 include pid for multiple launches a second
-** TODO inspect registers around macro w/gdb
+** DONE inspect registers around macro w/gdb
 using file:etc/simple-ur break at 4005b5 and 4005fc
 
+*** manual
 #+name: 4005b5-registers
 : rax            0x40058d 4195725
 : rbx            0x2      2
@@ -298,3 +299,76 @@ exit 0
 : < 	Inferior 1 [process 4640] will be killed.
 : ---
 : > 	Inferior 1 [process 4646] will be killed.
+
+*** automated
+#+begin_src sh :results scalar :dir ../sorters/sorters/
+  script(){
+      cat <<EOF
+  break ___mk_ur_$1_$2
+  run 1 3 2 4
+  info registers
+  quit
+  EOF
+  }
+  for i in $(seq 0 10);do
+      script enter $i > gdb.script
+      gdb bubble --command=./gdb.script 2>/dev/null|sed -n '/^rax/,/^gs/p'>gdb.enter
+      script exit $i > gdb.script
+      gdb bubble --command=./gdb.script 2>/dev/null|sed -n '/^rax/,/^gs/p'>gdb.exit
+      echo $i
+      diff gdb.enter gdb.exit
+      echo ""
+  done
+#+end_src
+
+#+RESULTS:
+: 0
+: 17,18c17,18
+: < rip            0x400701	0x400701 <sort+119>
+: < eflags         0x202	[ IF ]
+: ---
+: > rip            0x40078f	0x40078f <___mk_ur_exit_0>
+: > eflags         0x286	[ PF SF IF ]
+: 
+: 1
+: 17,18c17,18
+: < rip            0x4007bb	0x4007bb <___mk_ur_enter_1>
+: < eflags         0x206	[ PF IF ]
+: ---
+: > rip            0x40084b	0x40084b <___mk_ur_exit_1>
+: > eflags         0x293	[ CF AF SF IF ]
+: 
+: 2
+: 17c17
+: < rip            0x400851	0x400851 <___mk_ur_enter_2>
+: ---
+: > rip            0x4008e3	0x4008e3 <___mk_ur_exit_2>
+: 
+: 3
+: 17,18c17,18
+: < rip            0x4009ad	0x4009ad <main+194>
+: < eflags         0x206	[ PF IF ]
+: ---
+: > rip            0x400a3d	0x400a3d <___mk_ur_exit_3>
+: > eflags         0x297	[ CF PF AF SF IF ]
+: 
+: 4
+: 17,18c17,18
+: < rip            0x400a88	0x400a88 <___mk_ur_enter_4>
+: < eflags         0x202	[ IF ]
+: ---
+: > rip            0x400b18	0x400b18 <___mk_ur_exit_4>
+: > eflags         0x297	[ CF PF AF SF IF ]
+: 
+: 5
+: 
+: 6
+: 
+: 7
+: 
+: 8
+: 
+: 9
+: 
+: 10
+: 
