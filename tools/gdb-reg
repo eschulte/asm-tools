@@ -2,6 +2,8 @@
 #
 # Print register information at given labels.
 #
+# TODO: add option to replace "info registers" with
+#       "info all-registers"
 HELP="Usage: $0 EXE LABEL [ARGS]..."
 TMP=$(mktemp)
 function exit_hook (){ rm $TMP; }
