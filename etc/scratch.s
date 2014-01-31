@@ -14,25 +14,25 @@ ___mk_ur_left_\@:
 	call    random            # place a random number in eax
 	cmp     $65535, %ax       # first 1/2 rand determines if unreliable
 	pushf                     # push flags to stack
-	mov     16(%rsp), %r12    # | restore, offset by 8 from preceeding pushf
-	mov     24(%rsp), %r11    # |
-	mov     32(%rsp), %r10    # |
-	mov     40(%rsp), %r9     # |
-	mov     48(%rsp), %r8     # |
-	mov     56(%rsp), %rdi    # |
-	mov     64(%rsp), %rsi    # |
-	mov     72(%rsp), %rdx    # |
-	mov     80(%rsp), %rcx    # |
-	mov     88(%rsp), %rbx    # \- restore scratch registers
+	mov     8(%rsp), %r12     # | restore, offset by 8 from preceeding pushf
+	mov     16(%rsp), %r11    # |
+	mov     24(%rsp), %r10    # |
+	mov     32(%rsp), %r9     # |
+	mov     40(%rsp), %r8     # |
+	mov     48(%rsp), %rdi    # |
+	mov     56(%rsp), %rsi    # |
+	mov     64(%rsp), %rdx    # |
+	mov     72(%rsp), %rcx    # |
+	mov     80(%rsp), %rbx    # \- restore scratch registers
 	popf                      # restore comparison flags
 	jae     ___mk_ur_beg_\@   # jump to reliable or unreliable track
-	sub     $88, %rsp         # /- reliable track: move stack pointer to rax
+	add     $80, %rsp         # /- reliable track: move stack pointer to rax
 	pop     %rax              # | restore rax
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
 	jmp     ___mk_ur_end_\@   # \- jump past unreliable track to popf
 ___mk_ur_beg_\@:
-	sub     $88, %rsp         # move stack pointer to rax
+	add     $80, %rsp         # move stack pointer to rax
 	shr     $16, %eax         # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
