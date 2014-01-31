@@ -123,18 +123,39 @@ EOF
 s/\(^[[:space:]]\)\(cmp[^[:space:]]*\)\([[:space:]]*\)/\1___mk_unreliable\3\2, \$2261, /
 
 # seed the random number generator before the first macro invocation
-0,/___mk_unreliable/{s/___mk_unreliable/push    %rdi\\
-	push    %rax\\
-	mov     \$0, %rdi\\
-	call    time\\
-	mov     %rax, %rdi\\
-	mov     \$39, %eax\\
-	syscall\\
-	xor     %eax, %edi\\
-	call    srandom\\
-	pop     %rax\\
-	pop     %rdi\\
-	___mk_unreliable/}"
+0,/___mk_unreliable/{s/\t___mk_unreliable/$(cat <<"EOF"|sed 's/\\/\\\\/g;s|/|\\/|g;s/\t/\\t/g;s/$/\\/;'
+	push    %rax            # /- save scratch registers
+	push    %rbx            # |
+	push    %rcx            # |
+	push    %rdx            # |
+	push    %rsi            # |
+	push    %rdi            # |
+	push    %r8             # |
+	push    %r9             # |
+	push    %r10            # |
+	push    %r11            # |
+	push    %r12            # |
+	mov     $0, %rdi        #
+	call    time            # time(NULL)
+	mov     %rax, %rdi      #
+	mov     $39, %eax       # getpid system call
+	syscall                 #
+	xor     %eax, %edi      # mix time and pid for random seed
+	call    srandom         # srandom
+	pop     %r12            # |
+	pop     %r11            # |
+	pop     %r10            # |
+	pop     %r9             # |
+	pop     %r8             # |
+	pop     %rdi            # |
+	pop     %rsi            # |
+	pop     %rdx            # |
+	pop     %rcx            # |
+	pop     %rbx            # |
+	pop     %rax            # \- save scratch registers
+EOF
+)
+\\t___mk_unreliable/}"
 
 if [ -z $TRACE ];then
     SED_CMD=$(echo "$SED_CMD"|sed '/^TRACE/,/^TRACE/d')
