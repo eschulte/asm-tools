@@ -1,4 +1,6 @@
                                                            -*- org -*-
+#+Options: ^:{}
+
 * Notes
 ** x86 Flags
 |   bit | name | meaning                         | type    |
@@ -238,7 +240,85 @@ Simply swaps the order of arguments to =cmp=.
 #+RESULTS:
 : 256
 
-* Tasks [1/1]
+* Tasks [1/2]
 ** DONE Better random seeds
 include pid for multiple launches a second
+** TODO inspect registers around macro w/gdb
+using file:etc/simple-ur break at 4005b5 and 4005fc
 
+#+name: 4005b5-registers
+: rax            0x40058d 4195725
+: rbx            0x2      2
+: rcx            0x7ffff7dd70b0   140737351872688
+: rdx            0x7ffff7dd70a4   140737351872676
+: rsi            0x7fffffffdea4   140737488346788
+: rdi            0x1      1
+: rbp            0x0      0x0
+: rsp            0x7fffffffdee8   0x7fffffffdee8
+: r8             0x7ffff7dd7120   140737351872800
+: r9             0x7ffff7dd7120   140737351872800
+: r10            0x1f     31
+: r11            0x7ffff7a6b730   140737348286256
+: r12            0x4004a0 4195488
+: r13            0x7fffffffdfc0   140737488347072
+: r14            0x0      0
+: r15            0x0      0
+: rip            0x4005b5 0x4005b5 <___mk_ur_left_0>
+: eflags         0x212    [ AF IF ]
+: cs             0x33     51
+: ss             0x2b     43
+: ds             0x0      0
+: es             0x0      0
+: fs             0x0      0
+: gs             0x0      0
+
+#+begin_src bash :results scalar
+gdb etc/simple-ur --command=/tmp/it > /tmp/left;
+gdb etc/simple-ur --command=/tmp/ti > /tmp/right;
+diff /tmp/left /tmp/right
+exit 0
+#+end_src
+
+#+RESULTS:
+: 11c11
+: < Breakpoint 1 at 0x4005b5
+: ---
+: > Breakpoint 1 at 0x400629
+: 13,14c13,14
+: < Breakpoint 1, 0x00000000004005b5 in ___mk_ur_left_0 ()
+: < rax            0x40058d	4195725
+: ---
+: > Breakpoint 1, 0x0000000000400629 in ___mk_ur_right_0 ()
+: > rax            0x2	2
+: 16,19c16,19
+: < rcx            0x7ffff7dd70b0	140737351872688
+: < rdx            0x7ffff7dd70a4	140737351872676
+: < rsi            0x7fffffffe934	140737488349492
+: < rdi            0x1	1
+: ---
+: > rcx            0x7ffff7dd70b4	140737351872692
+: > rdx            0x7ffff7dd70a8	140737351872680
+: > rsi            0x7fffffffe90c	140737488349452
+: > rdi            0x7ffff7dd75c0	140737351873984
+: 21,22c21,22
+: < rsp            0x7fffffffe978	0x7fffffffe978
+: < r8             0x7ffff7dd7120	140737351872800
+: ---
+: > rsp            0x7fffffffe8d8	0x7fffffffe8d8
+: > r8             0x7ffff7dd70a8	140737351872680
+: 24,25c24,25
+: < r10            0x1f	31
+: < r11            0x7ffff7a6b730	140737348286256
+: ---
+: > r10            0x7fffffffe6e0	140737488348896
+: > r11            0x7ffff7a6b8b0	140737348286640
+: 30,31c30,31
+: < rip            0x4005b5	0x4005b5 <___mk_ur_left_0>
+: < eflags         0x216	[ PF AF IF ]
+: ---
+: > rip            0x400629	0x400629 <___mk_ur_right_0>
+: > eflags         0x202	[ IF ]
+: 40c40
+: < 	Inferior 1 [process 1698] will be killed.
+: ---
+: > 	Inferior 1 [process 1704] will be killed.
