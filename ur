@@ -9,17 +9,20 @@
 HELP="Usage: $0 [OPTION]... [INPUT-ASM-FILE]
  Options:
   -u RATE ----------- set RATE of unreliable computation
-  -d ---------------- write every reliable or unreliable path to STDERR
+  -t ---------------- write trace of (un)reliable cmps to STDERR
+  -d ---------------- add labels for debugging
   -i[SUFFIX] -------- edit file in place (optional backup at SUFFIX)"
-eval set -- $(getopt hu:di:: "$@" || echo "$HELP" && exit 1;)
+eval set -- $(getopt hu:t:di:: "$@" || echo "$HELP" && exit 1;)
 RATE=0.1
 SED_OPTS=" "
 DEBUG=""
+TRACE=""
 while [ $# -gt 0 ];do
     case $1 in
         -h)  echo "$HELP" && exit 0;;
         -u)  RATE=$2; shift;;
-        -d)  DEBUG=$2;;
+        -t)  TRACE="yes";;
+        -d)  DEBUG="yes";;
         -i)  SED_OPTS+="$1$2"; shift;;
         (--) shift; break;;
         (-*) echo "$HELP" && exit 1;;
@@ -33,12 +36,15 @@ SED_CMD="
 # the macro used to replace comparison instructions
 1i\\
 $(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"
-DEBUG
+TRACE
 	.section	.rodata
 ___mk_ur_u:	.ascii "u"
 ___mk_ur_r:	.ascii "r"
-DEBUG
+TRACE
 	.macro ___mk_unreliable cmd, mask, first, second
+DEBUG
+___mk_ur_enter_\@:
+DEBUG
 	push    %rax              # /-88 save scratch registers
 	push    %rbx              # | 80
 	push    %rcx              # | 72
@@ -69,9 +75,9 @@ DEBUG
 	pop     %rax              # | restore rax
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
-DEBUG
+TRACE
         push    $___mk_ur_r       # | save ASCII `r' reliable path for tracing
-DEBUG
+TRACE
 	jmp     ___mk_ur_end_\@   # \-jump past unreliable track to popf
 ___mk_ur_beg_\@:
 	add     $80, %rsp         # move stack pointer to rax
@@ -88,11 +94,11 @@ ___mk_ur_beg_\@:
 	or      (%rsp), %rax      # combine rand and saved flags
 	add     $8, %rsp          # pop rand, expose saved rax
 	xchg    (%rsp), %rax      # swap rax and flags, orig rax, flags on stack
-DEBUG
+TRACE
         push    $___mk_ur_u       # save ASCII `u' unreliable path for tracing
-DEBUG
+TRACE
 ___mk_ur_end_\@:
-DEBUG
+TRACE
         pop     %rsi              # string to write
         push    %rax              # save registers clobbered by the syscall
         push    %rdi              # |
@@ -104,8 +110,11 @@ DEBUG
         pop     %rdx              # /-
         pop     %rdi              # |
         pop     %rax              # restore saved registers
-DEBUG
+TRACE
 	popf                      # apply flags and restore stack
+DEBUG
+___mk_ur_exit_\@:
+DEBUG
 EOF
 )
 \\t.endm
@@ -126,6 +135,12 @@ s/\(^[[:space:]]\)\(cmp[^[:space:]]*\)\([[:space:]]*\)/\1___mk_unreliable\3\2, \
 	pop     %rax\\
 	pop     %rdi\\
 	___mk_unreliable/}"
+
+if [ -z $TRACE ];then
+    SED_CMD=$(echo "$SED_CMD"|sed '/^TRACE/,/^TRACE/d')
+else
+    SED_CMD=$(echo "$SED_CMD"|sed '/^TRACE/d')
+fi
 
 if [ -z $DEBUG ];then
     SED_CMD=$(echo "$SED_CMD"|sed '/^DEBUG/,/^DEBUG/d')
