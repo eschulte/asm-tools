@@ -39,11 +39,34 @@ ___mk_ur_u:	.ascii "u"
 ___mk_ur_r:	.ascii "r"
 DEBUG
 	.macro ___mk_unreliable cmd, mask, first, second
-	push    %rax              # save original value of rax
+	push    %rax              # /-88 save scratch registers
+	push    %rbx              # | 80
+	push    %rcx              # | 72
+	push    %rdx              # | 64
+	push    %rsi              # | 56
+	push    %rdi              # | 48
+	push    %r8               # | 40
+	push    %r9               # | 32
+	push    %r10              # | 24
+	push    %r11              # | 16
+	push    %r12              # | 8
 	call    random            # place a random number in eax
-	cmp     $ADJ, %ax       # first 1/2 rand determines if unreliable
+	cmp     $65535, %ax       # first 1/2 rand determines if unreliable
+	pushf                     # push flags to stack
+	mov     8(%rsp), %r12     # | restore, offset by 8 from preceeding pushf
+	mov     16(%rsp), %r11    # |
+	mov     24(%rsp), %r10    # |
+	mov     32(%rsp), %r9     # |
+	mov     40(%rsp), %r8     # |
+	mov     48(%rsp), %rdi    # |
+	mov     56(%rsp), %rsi    # |
+	mov     64(%rsp), %rdx    # |
+	mov     72(%rsp), %rcx    # |
+	mov     80(%rsp), %rbx    # \- restore scratch registers
+	popf                      # restore comparison flags
 	jae     ___mk_ur_beg_\@   # jump to reliable or unreliable track
-	pop     %rax              # /-reliable track
+	add     $80, %rsp         # /- reliable track: move stack pointer to rax
+	pop     %rax              # | restore rax
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
 DEBUG
@@ -51,6 +74,7 @@ DEBUG
 DEBUG
 	jmp     ___mk_ur_end_\@   # \-jump past unreliable track to popf
 ___mk_ur_beg_\@:
+	add     $80, %rsp         # move stack pointer to rax
 	shr     $16, %eax         # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
