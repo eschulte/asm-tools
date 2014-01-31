@@ -1,14 +1,38 @@
 	.macro ___mk_unreliable cmd, mask, first, second
-	push    %rax              # save original value of rax
+___mk_ur_left_\@:
+	push    %rax              # /-88 save scratch registers
+	push    %rbx              # | 80
+	push    %rcx              # | 72
+	push    %rdx              # | 64
+	push    %rsi              # | 56
+	push    %rdi              # | 48
+	push    %r8               # | 40
+	push    %r9               # | 32
+	push    %r10              # | 24
+	push    %r11              # | 16
+	push    %r12              # | 8
 	call    random            # place a random number in eax
-	cmp     $32767, %ax       # first 1/2 rand determines if unreliable
+	cmp     $65535, %ax       # first 1/2 rand determines if unreliable
+	pushf                     # push flags to stack
+	mov     16(%rsp), %r12    # | restore, offset by 8 from preceeding pushf
+	mov     24(%rsp), %r11    # |
+	mov     32(%rsp), %r10    # |
+	mov     40(%rsp), %r9     # |
+	mov     48(%rsp), %r8     # |
+	mov     56(%rsp), %rdi    # |
+	mov     64(%rsp), %rsi    # |
+	mov     72(%rsp), %rdx    # |
+	mov     80(%rsp), %rcx    # |
+	mov     88(%rsp), %rbx    # \- restore scratch registers
+	popf                      # restore comparison flags
 	jae     ___mk_ur_beg_\@   # jump to reliable or unreliable track
-	pop     %rax              # /-reliable track
+	sub     $88, %rsp         # /- reliable track: move stack pointer to rax
+	pop     %rax              # | restore rax
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
-        push    $___mk_ur_r       # | save unrandom path for tracing
-	jmp     ___mk_ur_end_\@   # \-jump past unreliable track to popf
+	jmp     ___mk_ur_end_\@   # \- jump past unreliable track to popf
 ___mk_ur_beg_\@:
+	sub     $88, %rsp         # move stack pointer to rax
 	shr     $16, %eax         # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
@@ -22,25 +46,10 @@ ___mk_ur_beg_\@:
 	or      (%rsp), %rax      # combine rand and saved flags
 	add     $8, %rsp          # pop rand, expose saved rax
 	xchg    (%rsp), %rax      # swap rax and flags, orig rax, flags on stack
-        push    $___mk_ur_u       # save random path for tracing
 ___mk_ur_end_\@:
-        pop     %rsi            # string to write
-        push    %rax            # save registers clobbered by the syscall
-        push    %rdi            # |
-        push    %rdx            # \-
-	mov     $1, %rax        # write system call
-        mov     $2, %rdi        # STDERR file descriptor
-        mov     $1, %rdx        # length
-        syscall
-        pop     %rdx            # restore saved registers
-        pop     %rdi            # |
-        pop     %rax            # \-
-	popf                    # apply flags and restore stack
+	popf                      # apply flags and restore stack
+___mk_ur_right_\@:
 	.endm
-	.section	.rodata
-___mk_ur_u:	.ascii "u"
-___mk_ur_r:	.ascii "r"
-___mk_ur_f:     .ascii "out"
 .text
 .global main
 
