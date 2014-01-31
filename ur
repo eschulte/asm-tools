@@ -37,7 +37,6 @@ DEBUG
 	.section	.rodata
 ___mk_ur_u:	.ascii "u"
 ___mk_ur_r:	.ascii "r"
-___mk_ur_n:	.ascii "\n"
 DEBUG
 	.macro ___mk_unreliable cmd, mask, first, second
 	push    %rax              # save original value of rax
@@ -102,21 +101,6 @@ s/\(^[[:space:]]\)\(cmp[^[:space:]]*\)\([[:space:]]*\)/\1___mk_unreliable\3\2, \
 	call    srandom\\
 	pop     %rax\\
 	pop     %rdi\\
-DEBUG
-	push    %rsi              # save registers clobbered by the syscall\\
-        push    %rax              # |\\
-        push    %rdi              # |\\
-        push    %rdx              # \\\\-\\
-        mov     \$___mk_ur_n, %rsi # string to write\\
-	mov     \$1, %rax          # write system call\\
-        mov     \$2, %rdi          # STDERR file descriptor\\
-        mov     \$1, %rdx          # length\\
-        syscall\\
-        pop     %rdx              # \/-\\
-        pop     %rdi              # |\\
-        pop     %rax              # |\\
-	pop     %rsi              # restore saved registers\\
-DEBUG
 	___mk_unreliable/}"
 
 if [ -z $DEBUG ];then
