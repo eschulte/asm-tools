@@ -47,7 +47,7 @@ DEBUG
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
 DEBUG
-        push    $___mk_ur_u       # | save ASCII `u' unrandom path for tracing
+        push    $___mk_ur_r       # | save ASCII `r' reliable path for tracing
 DEBUG
 	jmp     ___mk_ur_end_\@   # \-jump past unreliable track to popf
 ___mk_ur_beg_\@:
@@ -65,7 +65,7 @@ ___mk_ur_beg_\@:
 	add     $8, %rsp          # pop rand, expose saved rax
 	xchg    (%rsp), %rax      # swap rax and flags, orig rax, flags on stack
 DEBUG
-        push    $___mk_ur_r       # save ASCII `r' random path for tracing
+        push    $___mk_ur_u       # save ASCII `u' unreliable path for tracing
 DEBUG
 ___mk_ur_end_\@:
 DEBUG
