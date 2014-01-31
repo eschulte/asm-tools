@@ -19,7 +19,7 @@ fi
 echo " stack preservation across macro"
 
 # registers
-for reg in eax ebx ecx edx;do
+for reg in ebx ecx edx esi edi;do
     cat register.s|sed "s/reg/$reg/"|gcc -x assembler - -o reg-$reg
     ./reg-$reg
     if [ $? -eq 12 ];then
