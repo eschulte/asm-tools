@@ -68,8 +68,8 @@ s/\(^[[:space:]]\)\(cmp[^[:space:]]*\)\([[:space:]]*\)/\1___mk_unreliable\3\2, \
 	mov     \$0, %rdi\\
 	call    time\\
 	mov     %rax, %rdi\\
-	mov     \$0x14, %eax\\
-	int     \$0x80\\
+	mov     \$39, %eax\\
+	syscall\\
 	xor     %eax, %edi\\
 	call    srandom\\
 	pop     %rax\\
