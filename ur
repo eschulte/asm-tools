@@ -12,7 +12,7 @@ HELP="Usage: $0 [OPTION]... [INPUT-ASM-FILE]
   -t ---------------- write trace of (un)reliable cmps to STDERR
   -d ---------------- add labels for debugging
   -i[SUFFIX] -------- edit file in place (optional backup at SUFFIX)"
-eval set -- $(getopt hu:t:di:: "$@" || echo "$HELP" && exit 1;)
+eval set -- $(getopt hu:tdi:: "$@" || echo "$HELP" && exit 1;)
 RATE=0.1
 SED_OPTS=" "
 DEBUG=""
