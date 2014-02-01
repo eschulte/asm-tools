@@ -41,46 +41,48 @@ TRACE
 ___mk_ur_u:	.ascii "u"
 ___mk_ur_r:	.ascii "r"
 TRACE
+	.section	.data
+___mk_ur_fp:    .string "/dev/urandom"
+___mk_ur_fd:    .int 0
+___mk_ur_rd:    .quad 0
 	.macro ___mk_unreliable cmd, mask, first, second
 DEBUG
 ___mk_ur_enter_\@:
 DEBUG
-	push    %rax              # /-88 save scratch registers
-	push    %rbx              # | 80
-	push    %rcx              # | 72
-	push    %rdx              # | 64
-	push    %rsi              # | 56
-	push    %rdi              # | 48
-	push    %r8               # | 40
-	push    %r9               # | 32
-	push    %r10              # | 24
-	push    %r11              # | 16
-	push    %r12              # | 8
-	call    random            # place a random number in eax
+	push    %rax
+	push    %rdx
+	push    %rsi
+	push    %rdi
+	mov     ___mk_ur_fd, %rax
+	cmp     $0, %rax
+	jne     ___mk_ur_fd_\@
+	## open /dev/urandom for reading
+	mov     $2, %rax        # sys_open
+ 	mov	$0, %rsi        # O_RDONLY
+ 	mov	$___mk_ur_fp, %rdi # file name
+	syscall
+	mov     %rax, ___mk_ur_fd
+___mk_ur_fd_\@:
+	## read 32 bits into %eax
+	mov     $0, %rax           # sys_read
+	mov     ___mk_ur_fd, %rdi  # file handle to read from
+	mov     $___mk_ur_rd, %rsi # read bytes into my_rd
+	mov     $4, %rdx           # length
+	syscall
+	pop     %rdi
+	pop     %rsi
+	pop     %rdx
+	mov     ___mk_ur_rd, %eax # move random bytes into eax
 	cmp     $65535, %ax       # first 1/2 rand determines if unreliable
-	pushf                     # push flags to stack
-	mov     8(%rsp), %r12     # | restore, offset by 8 from preceeding pushf
-	mov     16(%rsp), %r11    # |
-	mov     24(%rsp), %r10    # |
-	mov     32(%rsp), %r9     # |
-	mov     40(%rsp), %r8     # |
-	mov     48(%rsp), %rdi    # |
-	mov     56(%rsp), %rsi    # |
-	mov     64(%rsp), %rdx    # |
-	mov     72(%rsp), %rcx    # |
-	mov     80(%rsp), %rbx    # \- restore scratch registers
-	popf                      # restore comparison flags
 	jae     ___mk_ur_beg_\@   # jump to reliable or unreliable track
-	add     $80, %rsp         # /- reliable track: move stack pointer to rax
-	pop     %rax              # | restore rax
+	pop     %rax              # /- reliable path, restore rax
 	\cmd    \first, \second   # | perform the original comparison
 	pushf                     # | save original flags
 TRACE
-        push    $___mk_ur_r       # | save ASCII `r' reliable path for tracing
+	push    $___mk_ur_r       # | save ASCII `r' reliable path for tracing
 TRACE
 	jmp     ___mk_ur_end_\@   # \-jump past unreliable track to popf
 ___mk_ur_beg_\@:
-	add     $80, %rsp         # move stack pointer to rax
 	shr     $16, %eax         # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
@@ -95,21 +97,21 @@ ___mk_ur_beg_\@:
 	add     $8, %rsp          # pop rand, expose saved rax
 	xchg    (%rsp), %rax      # swap rax and flags, orig rax, flags on stack
 TRACE
-        push    $___mk_ur_u       # save ASCII `u' unreliable path for tracing
+	push    $___mk_ur_u       # save ASCII `u' unreliable path for tracing
 TRACE
 ___mk_ur_end_\@:
 TRACE
-        pop     %rsi              # string to write
-        push    %rax              # save registers clobbered by the syscall
-        push    %rdi              # |
-        push    %rdx              # \-
+	pop     %rsi              # string to write
+	push    %rax              # save registers clobbered by the syscall
+	push    %rdi              # |
+	push    %rdx              # \-
 	mov     $1, %rax          # write system call
-        mov     $2, %rdi          # STDERR file descriptor
-        mov     $1, %rdx          # length
-        syscall
-        pop     %rdx              # /-
-        pop     %rdi              # |
-        pop     %rax              # restore saved registers
+	mov     $2, %rdi          # STDERR file descriptor
+	mov     $1, %rdx          # length
+	syscall
+	pop     %rdx              # /-
+	pop     %rdi              # |
+	pop     %rax              # restore saved registers
 TRACE
 	popf                      # apply flags and restore stack
 DEBUG
@@ -120,42 +122,7 @@ EOF
 \\t.endm
 
 # replace all comparison instructions with macro calls
-s/\(^[[:space:]]\)\(cmp[^[:space:]]*\)\([[:space:]]*\)/\1___mk_unreliable\3\2, \$2261, /
-
-# seed the random number generator before the first macro invocation
-0,/___mk_unreliable/{s/\t___mk_unreliable/$(cat <<"EOF"|sed 's/\\/\\\\/g;s|/|\\/|g;s/\t/\\t/g;s/$/\\/;'
-	push    %rax            # /- save scratch registers
-	push    %rbx            # |
-	push    %rcx            # |
-	push    %rdx            # |
-	push    %rsi            # |
-	push    %rdi            # |
-	push    %r8             # |
-	push    %r9             # |
-	push    %r10            # |
-	push    %r11            # |
-	push    %r12            # |
-	mov     $0, %rdi        #
-	call    time            # time(NULL)
-	mov     %rax, %rdi      #
-	mov     $39, %eax       # getpid system call
-	syscall                 #
-	xor     %eax, %edi      # mix time and pid for random seed
-	call    srandom         # srandom
-	pop     %r12            # |
-	pop     %r11            # |
-	pop     %r10            # |
-	pop     %r9             # |
-	pop     %r8             # |
-	pop     %rdi            # |
-	pop     %rsi            # |
-	pop     %rdx            # |
-	pop     %rcx            # |
-	pop     %rbx            # |
-	pop     %rax            # \- save scratch registers
-EOF
-)
-\\t___mk_unreliable/}"
+s/\(^[[:space:]]\)\(cmp[^[:space:]]*\)\([[:space:]]*\)/\1___mk_unreliable\3\2, \$2261, /"
 
 if [ -z $TRACE ];then
     SED_CMD=$(echo "$SED_CMD"|sed '/^TRACE/,/^TRACE/d')
