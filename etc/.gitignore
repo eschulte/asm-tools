@@ -8,3 +8,4 @@
 !printer.c
 !stack.s
 !register.s
+!random.s
