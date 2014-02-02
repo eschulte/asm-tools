@@ -239,7 +239,7 @@ Simply swaps the order of arguments to =cmp=.
 #+RESULTS:
 : 256
 
-* Tasks [2/6]
+* Tasks [3/6]
 ** DONE Better random seeds
 include pid for multiple launches a second
 ** DONE inspect registers around macro w/gdb
@@ -374,4 +374,7 @@ exit 0
 ** TODO fold tests into a top-level Makefile
 ** TODO man page
 ** TODO make install support
-** TODO figure out why -8(%rbp) holds the wrong value
+** DONE figure out why -8(%rbp) holds the wrong value
+Because GCC doesn't compile code amenable to extra pushing and poping.
+
+This issue fixed by performing all temporary storage off of the stack.
