@@ -44,6 +44,7 @@ TRACE
 	.section	.rodata
 ___mk_ur_u:	.ascii "u"
 ___mk_ur_r:	.ascii "r"
+___mk_ur_n:	.ascii "\n"
 TRACE
 	.section	.data
 ___mk_ur_fp:    .string "RAND"
@@ -91,6 +92,14 @@ DEBUG
  	mov	$___mk_ur_fp, %rdi # file name
 	syscall
 	mov     %rax, ___mk_ur_fd
+TRACE
+	## take this opportunity to print a leading newline for tracing
+	mov     $___mk_ur_n, %rsi  # string to write
+	mov     $1, %rax           # write system call
+	mov     $2, %rdi           # STDERR file descriptor
+	mov     $1, %rdx           # length
+	syscall
+TRACE
 ___mk_ur_fd_\@:
 	## read 32 bits into %eax
 	mov     $0, %rax           # sys_read
@@ -139,13 +148,14 @@ TRACE
 TRACE
 ___mk_ur_end_\@:
 TRACE
-	mov     $___mk_ur_trace, %rsi # string to write
+	mov     ___mk_ur_trace, %rsi # string to write
 	mov     %rax, ___mk_ur_rbx # save registers clobbered by the syscall
 	mov     %rdi, ___mk_ur_rdi # |
 	mov     %rdx, ___mk_ur_rdx # \-
 	mov     $1, %rax           # write system call
 	mov     $2, %rdi           # STDERR file descriptor
 	mov     $1, %rdx           # length
+	syscall
 	mov     ___mk_ur_rdx, %rdx # /-
 	mov     ___mk_ur_rdi, %rdi # |
 	mov     ___mk_ur_rbx, %rax # restore saved registers
