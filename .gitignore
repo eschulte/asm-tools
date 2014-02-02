@@ -1,4 +1,4 @@
-asm-trace
+bin/
 
 examples/plain
 examples/w-func
