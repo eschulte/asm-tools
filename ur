@@ -46,9 +46,23 @@ ___mk_ur_u:	.ascii "u"
 ___mk_ur_r:	.ascii "r"
 TRACE
 	.section	.data
-___mk_ur_fp:    .string "/dev/urandom"
+___mk_ur_fp:    .string "RAND"
 ___mk_ur_fd:    .int 0
 ___mk_ur_rd:    .quad 0
+___mk_ur_top:   .quad 0
+___mk_ur_rbx:   .quad 0
+___mk_ur_rcx:   .quad 0
+___mk_ur_rdx:   .quad 0
+___mk_ur_rsi:   .quad 0
+___mk_ur_rdi:   .quad 0
+___mk_ur_r8:    .quad 0
+___mk_ur_r9:    .quad 0
+___mk_ur_r10:   .quad 0
+___mk_ur_r11:   .quad 0
+___mk_ur_r12:   .quad 0
+TRACE
+___mk_ur_trace: .quad 0
+TRACE
 	.macro ___mk_unreliable cmd, mask, first, second
 DEBUG
 ___mk_ur_enter_\@:
@@ -56,17 +70,18 @@ DEBUG
 	## Save everything to memory instead of the stack.
 	## also, save the head of the stack to memory so it
 	## isn't overwritten by pushf.
-	push    %rax # <- this one is what overwrites part of the arguments
-	push    %rbx
-	push    %rcx
-	push    %rdx
-	push    %rsi
-	push    %rdi
-	push    %r8
-	push    %r9
-	push    %r10
-	push    %r11
-	push    %r12
+	xchg    (%rsp), %rax
+	mov     %rax, ___mk_ur_top
+	mov     %rbx, ___mk_ur_rbx
+	mov     %rcx, ___mk_ur_rcx
+	mov     %rdx, ___mk_ur_rdx
+	mov     %rsi, ___mk_ur_rsi
+	mov     %rdi, ___mk_ur_rdi
+	mov     %r8,  ___mk_ur_r8
+	mov     %r9,  ___mk_ur_r9
+	mov     %r10, ___mk_ur_r10
+	mov     %r11, ___mk_ur_r11
+	mov     %r12, ___mk_ur_r12
 	mov     ___mk_ur_fd, %rax
 	cmp     $0, %rax
 	jne     ___mk_ur_fd_\@
@@ -83,26 +98,28 @@ ___mk_ur_fd_\@:
 	mov     $___mk_ur_rd, %rsi # read bytes into my_rd
 	mov     $4, %rdx           # length
 	syscall
-	pop     %r12
-	pop     %r11
-	pop     %r10
-	pop     %r9
-	pop     %r8
-	pop     %rdi
-	pop     %rsi
-	pop     %rdx
-	pop     %rcx
-	pop     %rbx
-	mov     ___mk_ur_rd, %rax # move random bytes into rax
-	cmp     $65535, %ax       # first 1/2 rand determines if unreliable
-	jae     ___mk_ur_beg_\@   # jump to reliable or unreliable track
-	pop     %rax              # /- reliable path, restore rax
-	\cmd    \first, \second   # | perform the original comparison
-	pushf                     # | save original flags
+	mov     ___mk_ur_rbx, %rbx
+	mov     ___mk_ur_rcx, %rcx
+	mov     ___mk_ur_rdx, %rdx
+	mov     ___mk_ur_rsi, %rsi
+	mov     ___mk_ur_rdi, %rdi
+	mov     ___mk_ur_r8,  %r8
+	mov     ___mk_ur_r9,  %r9
+	mov     ___mk_ur_r10, %r10
+	mov     ___mk_ur_r11, %r11
+	mov     ___mk_ur_r12, %r12
+	mov     ___mk_ur_rd, %rax  # move random bytes into rax
+	cmp     $ADJ, %ax        # first 1/2 rand determines if unreliable
+	jae     ___mk_ur_beg_\@    # jump to reliable or unreliable track
+	mov     ___mk_ur_top, %rax # /- reliable path, restore rax
+	xchg    %rax, (%rsp)
+before\@:
+	\cmd    \first, \second    # | perform the original comparison
+after\@:
 TRACE
-	push    $___mk_ur_r       # | save ASCII `r' reliable path for tracing
+	mov     $___mk_ur_r, ___mk_ur_trace # | save ASCII `r' for path tracing
 TRACE
-	jmp     ___mk_ur_end_\@   # \-jump past unreliable track to popf
+	jmp     ___mk_ur_end_\@    # \-jump past unreliable track to popf
 ___mk_ur_beg_\@:
 	shr     $16, %rax         # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
@@ -118,23 +135,24 @@ ___mk_ur_beg_\@:
 	add     $8, %rsp          # pop rand, expose saved rax
 	xchg    (%rsp), %rax      # swap rax and flags, orig rax, flags on stack
 TRACE
-	push    $___mk_ur_u       # save ASCII `u' unreliable path for tracing
+	mov     $___mk_ur_u, ___mk_ur_trace # save ASCII `u' for path tracing
 TRACE
 ___mk_ur_end_\@:
 TRACE
-	pop     %rsi              # string to write
-	push    %rax              # save registers clobbered by the syscall
-	push    %rdi              # |
-	push    %rdx              # \-
-	mov     $1, %rax          # write system call
-	mov     $2, %rdi          # STDERR file descriptor
-	mov     $1, %rdx          # length
-	syscall
-	pop     %rdx              # /-
-	pop     %rdi              # |
-	pop     %rax              # restore saved registers
+	mov     $___mk_ur_trace, %rsi # string to write
+	mov     %rax, ___mk_ur_rbx # save registers clobbered by the syscall
+	mov     %rdi, ___mk_ur_rdi # |
+	mov     %rdx, ___mk_ur_rdx # \-
+	mov     $1, %rax           # write system call
+	mov     $2, %rdi           # STDERR file descriptor
+	mov     $1, %rdx           # length
+	mov     ___mk_ur_rdx, %rdx # /-
+	mov     ___mk_ur_rdi, %rdi # |
+	mov     ___mk_ur_rbx, %rax # restore saved registers
 TRACE
-	popf                      # apply flags and restore stack
+	mov     %rax, (%rsp)
+	mov     ___mk_ur_top, %rax
+	xchg    %rax, (%rsp)
 DEBUG
 ___mk_ur_exit_\@:
 DEBUG
