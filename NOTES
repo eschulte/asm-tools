@@ -1,14 +1,15 @@
-Notes                                                      -*- org -*-
+                                                           -*- org -*-
 #+Options: ^:{}
 
-* gcc assembler labels
+* Notes
+** gcc assembler labels
 http://stackoverflow.com/questions/9799676/what-do-the-gcc-assembly-output-labels-signify
 
 Look at the uses of the =ASM_GENERATE_INTERNAL_LABEL= macro.
 : ./config/i386/att.h:85:#define ASM_GENERATE_INTERNAL_LABEL(BUF,PREFIX,NUMBER)
 The second =PREFIX= argument determines the type of the label.
 
-** Manually harvested labels
+*** Manually harvested labels
 | ./config/i386/i386.c:13723       | L                  | code label                     |
 | ./config/rs6000/rs6000.c:20027   |                    |                                |
 | ./config/s390/s390.h:863         |                    | addr vector elt                |
@@ -71,10 +72,10 @@ The second =PREFIX= argument determines the type of the label.
 | LBB                    | block begin label                   |
 | LBE                    | block end label                     |
 | LM                     | line code label                     |
-* assembler pseudo-ops
+** assembler pseudo-ops
 http://sourceware.org/binutils/docs-2.20/as/
 
-* spread counts along the file
+** spread counts along the file
 Convert raw samples to counts.
 #+begin_src sh
 cat trace.out|sort|uniq -c > trace.counts
@@ -84,5 +85,383 @@ Convert counts to labeling script and use it to collect counts by ASM line.
 #+begin_src sh
 cat plain.s|sed $(cat trace.counts|asm-annotate)
 #+end_src
-* control flow instructions
+** control flow instructions
 http://en.wikibooks.org/wiki/X86_Assembly/Control_Flow
+
+** x86 Flags
+|   bit | name | meaning                         | type    |
+|-------+------+---------------------------------+---------|
+|     0 | CF   | Carry flag                      | Status  |
+|     1 | 1    | Reserved                        |         |
+|     2 | PF   | Parity flag                     | Status  |
+|     3 | 0    | Reserved                        |         |
+|     4 | AF   | Adjust flag                     | Status  |
+|     5 | 0    | Reserved                        |         |
+|     6 | ZF   | Zero flag                       | Status  |
+|     7 | SF   | Sign flag                       | Status  |
+|     8 | TF   | Trap flag (single step)         | Control |
+|     9 | IF   | Interrupt enable flag           | Control |
+|    10 | DF   | Direction flag                  | Control |
+|    11 | OF   | Overflow flag                   | Status  |
+| 12-13 | IOPL | I/O privilege level (286+ only) | System  |
+|       |      | always 1 on 8086 and 186        |         |
+|    14 | NT   | Nested task flag (286+ only)    | System  |
+|       |      | always 1 on 8086 and 186        |         |
+|    15 | 0    | Reserved                        |         |
+|       |      | always 1 on 8086 and 186        |         |
+|       |      | always 0 on later models        |         |
+
+by instruction
+| instruction | changed flags     | changed bits |    hex | decimal |
+|-------------+-------------------+--------------+--------+---------|
+| cmpl        | AF CF OF PF SF ZF | 0 2 4 6 7 11 | 0x08D5 |    2261 |
+
+** links
+- http://www.cs.virginia.edu/~evans/cs216/guides/x86.html
+- http://ref.x86asm.net/#HTML-Editions
+- https://www.cs.uaf.edu/2005/fall/cs301/support/x86/index.html
+- http://en.wikipedia.org/wiki/FLAGS_register
+
+** code snippets
+*** new version of macro
+#+begin_src asm
+.text
+.global main
+
+main:
+	mov     $1, %rax
+	call    rand
+# Use the low bits of rand output to check if randomization should
+# happen at all.
+	cmp     $229, %ah
+	ja      .+10
+	cmp     $2, %rax # Non-random path
+	pushf
+	jmp     .+6
+	shl     $4, %eax # discard used random bits, and line up unused
+	andl    $21743, %eax # zero out masked bits in random bits/flags
+	push    %rax         # save the random flags to the stack
+	cmp      $2, %rax
+	pushf
+	movq    $21743, %rax     # put the masked bits into eax
+	notq    %rax             # negate the mask bits
+	andq    %rax, (%esp)     # pull masked flags into eax
+	subl    $4, %esp         # pop flags, expose random bits
+	andq    %rax, (%esp)     # combine saved flags and random bits
+	subl    $4, %esp         # pop random, expose original eax
+	xchg    %rax, (%esp)     # swap eax and flags
+	popf
+        ja      big
+        mov     $0, %eax
+        ret
+big:
+        mov     $1, %eax
+        ret
+#+end_src
+
+*** calculating jumps
+When really not sure, running something like the following (with no
+overly long function calls) in gdb with
+: break main
+: display/i $pc
+: run
+: stepi
+and then repeatedly =stepi='ing works well.
+
+#+begin_src asm
+	.macro  swapit cmd, first, second
+	mov     $250, %ah      # ja taken when >$229
+	cmp     $229, %ah
+	ja      .+8
+	\cmd   \first, \second
+	pushf
+	jmp     .+24
+	xor     \first, \second # <- ja .+8
+	xor     \second, \first # <- jmp .+6
+	xor     \first, \second
+	\cmd   \first, \second  # <- jmp .+12
+	xor     \first, \second # <- jmp .+14
+	xor     \second, \first # <- jmp .+17
+	xor     \first, \second # <- jmp .+20
+        ## unaligned jumps:
+        ## jmp .+16 -> retq
+	pushf                   # <- jmp .+23
+	popf                    # <- jmp .+24
+	.endm
+.text
+.global main
+
+main:
+	mov     $1, %rax
+	mov     $2, %rbx
+	mov     $3, %rcx
+        swapit  cmp, %rax, %rbx
+        pushf
+        jmp     .+6
+        swapit cmp, %rbx, %rax
+        pushf
+        popf
+        ja      big
+        mov     $0, %eax
+        ret
+big:
+        mov     $1, %eax
+        ret
+#+end_src
+
+*** stochastic comparison swap
+Note that a relative jump address must be used because we're in a
+macro.  I don't know why =.+12= works, but according to gdb it does.
+
+#+begin_src asm :tangle etc/stochastic-flip.s
+          .macro  swapcmp first, second
+          call    rand
+          cmp     $127, %ah
+          ja      .+12
+          xor     \first, \second
+          xor     \second, \first
+          xor     \first, \second
+          cmp     \first, \second
+          .endm
+  .text
+  .global main
+  
+  main:
+          mov     $0, %rdi
+          call    time
+          mov     %rax, %rdi
+          call    srand
+          mov     $1, %rax
+          mov     $2, %rbx
+          swapcmp     %rax,%rbx
+          jge     .yes
+          mov     $0, %eax
+          ret
+  .yes:
+          mov $1, %eax
+          ret
+#+end_src
+
+*** better way to change a comparison
+Simply swaps the order of arguments to =cmp=.
+#+begin_src asm
+  .macro  swapcmp first, second
+  xor     \first, \second         # swap the two arguments
+  xor     \second, \first
+  xor     \first, \second
+  cmp     \first, \second         # perform the comparison
+  .endm
+#+end_src
+
+*** change the value of SF after a comparison
+#+begin_src asm
+  .text
+  .global main
+  
+  main:
+          mov     $1, %rax
+          mov     $9, %rbx
+          cmp     %rax,%rbx
+  ## and then change SF
+          mov     $1, %rbx
+          shl     $7, %rbx # set the SF bit to 1 in rbx
+          pushf
+          popq    %rax     # pull flags into rax
+          orq     %rbx, %rax # set SF high
+          notq    %rbx
+          andq    %rbx, %rax # set SF low
+          pushq   %rax
+          popf # reset in flags
+          ret
+#+end_src
+*** macro to change SF bit to argument
+#+begin_src asm
+        .macro jdo predicate
+        pushf                     # put flags on the stack
+        popq    %rax              # pull flags into rax
+        mov     $\predicate, %rbx # set the SF bit to predicate in rbx
+        shl     $7, %rbx          #
+        orq     %rbx, %rax        # set SF bit to itself or predicate
+        mov     $1, %rcx          # everything but SF bit on in rcx
+        shl     $7, %rcx          #
+        notq    %rcx              #
+	xorq    %rcx, %rbx        # all other bits on in rbx
+        andq    %rbx, %rax        # set SF low
+        pushq   %rax              #
+        popf                      # reset in flags
+        .endm
+#+end_src
+
+*** random jump
+#+begin_src asm
+    mov $0, %rdi
+    call time
+    mov %rax, %rdi
+    call srand
+    call rand 
+    cmp $127, %ah
+    ja big
+  little:
+    mov $1, %eax
+    ret
+  big:
+    mov $0, %eax
+    ret
+#+end_src
+
+*** shifting bits
+#+begin_src asm
+          mov $1, %eax
+          shl $4, %eax
+          ret
+#+end_src
+
+*** C stuff
+#+begin_src C
+  unsigned int this=1<<8;
+  printf("%u\n", this);
+#+end_src
+
+#+RESULTS:
+: 256
+
+* Tasks [4/6]
+** DONE Better random seeds
+include pid for multiple launches a second
+** DONE inspect registers around macro w/gdb
+using file:etc/simple-ur break at 4005b5 and 4005fc
+
+*** manual
+#+name: 4005b5-registers
+: rax            0x40058d 4195725
+: rbx            0x2      2
+: rcx            0x7ffff7dd70b0   140737351872688
+: rdx            0x7ffff7dd70a4   140737351872676
+: rsi            0x7fffffffdea4   140737488346788
+: rdi            0x1      1
+: rbp            0x0      0x0
+: rsp            0x7fffffffdee8   0x7fffffffdee8
+: r8             0x7ffff7dd7120   140737351872800
+: r9             0x7ffff7dd7120   140737351872800
+: r10            0x1f     31
+: r11            0x7ffff7a6b730   140737348286256
+: r12            0x4004a0 4195488
+: r13            0x7fffffffdfc0   140737488347072
+: r14            0x0      0
+: r15            0x0      0
+: rip            0x4005b5 0x4005b5 <___mk_ur_left_0>
+: eflags         0x212    [ AF IF ]
+: cs             0x33     51
+: ss             0x2b     43
+: ds             0x0      0
+: es             0x0      0
+: fs             0x0      0
+: gs             0x0      0
+
+#+begin_src bash :results scalar
+gdb etc/scratch --command=/tmp/it > /tmp/left;
+gdb etc/scratch --command=/tmp/ti > /tmp/right;
+diff /tmp/left /tmp/right
+exit 0
+#+end_src
+
+#+RESULTS:
+: 11c11
+: < Breakpoint 1 at 0x4005b5
+: ---
+: > Breakpoint 1 at 0x400647
+: 13c13
+: < Breakpoint 1, 0x00000000004005b5 in ___mk_ur_left_0 ()
+: ---
+: > Breakpoint 1, 0x0000000000400647 in ___mk_ur_right_0 ()
+: 30,31c30,31
+: < rip            0x4005b5	0x4005b5 <___mk_ur_left_0>
+: < eflags         0x216	[ PF AF IF ]
+: ---
+: > rip            0x400647	0x400647 <___mk_ur_right_0>
+: > eflags         0x202	[ IF ]
+: 40c40
+: < 	Inferior 1 [process 4640] will be killed.
+: ---
+: > 	Inferior 1 [process 4646] will be killed.
+
+*** automated
+#+begin_src sh :results scalar :dir ../sorters/sorters/
+  script(){
+      cat <<EOF
+  break ___mk_ur_$1_$2
+  run 1 3 2 4
+  info registers
+  quit
+  EOF
+  }
+  for i in $(seq 0 10);do
+      script enter $i > gdb.script
+      gdb bubble --command=./gdb.script 2>/dev/null|sed -n '/^rax/,/^gs/p'>gdb.enter
+      script exit $i > gdb.script
+      gdb bubble --command=./gdb.script 2>/dev/null|sed -n '/^rax/,/^gs/p'>gdb.exit
+      echo $i
+      diff gdb.enter gdb.exit
+      echo ""
+  done
+#+end_src
+
+#+RESULTS:
+: 0
+: 17,18c17,18
+: < rip            0x400701	0x400701 <sort+119>
+: < eflags         0x202	[ IF ]
+: ---
+: > rip            0x40078f	0x40078f <___mk_ur_exit_0>
+: > eflags         0x286	[ PF SF IF ]
+: 
+: 1
+: 17,18c17,18
+: < rip            0x4007bb	0x4007bb <___mk_ur_enter_1>
+: < eflags         0x206	[ PF IF ]
+: ---
+: > rip            0x40084b	0x40084b <___mk_ur_exit_1>
+: > eflags         0x293	[ CF AF SF IF ]
+: 
+: 2
+: 17c17
+: < rip            0x400851	0x400851 <___mk_ur_enter_2>
+: ---
+: > rip            0x4008e3	0x4008e3 <___mk_ur_exit_2>
+: 
+: 3
+: 17,18c17,18
+: < rip            0x4009ad	0x4009ad <main+194>
+: < eflags         0x206	[ PF IF ]
+: ---
+: > rip            0x400a3d	0x400a3d <___mk_ur_exit_3>
+: > eflags         0x297	[ CF PF AF SF IF ]
+: 
+: 4
+: 17,18c17,18
+: < rip            0x400a88	0x400a88 <___mk_ur_enter_4>
+: < eflags         0x202	[ IF ]
+: ---
+: > rip            0x400b18	0x400b18 <___mk_ur_exit_4>
+: > eflags         0x297	[ CF PF AF SF IF ]
+: 
+: 5
+: 
+: 6
+: 
+: 7
+: 
+: 8
+: 
+: 9
+: 
+: 10
+:
+** DONE fold tests into a top-level Makefile
+** TODO man page
+** TODO make install support
+** DONE figure out why -8(%rbp) holds the wrong value
+Because GCC doesn't compile code amenable to extra pushing and poping.
+
+This issue fixed by performing all temporary storage off of the stack.
+

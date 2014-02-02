@@ -1,0 +1,11 @@
+*
+!.gitignore
+!Makefile
+!cmp.c
+!scratch.s
+!hello.s
+!two-cmp.s
+!printer.c
+!stack.s
+!register.s
+!random.s

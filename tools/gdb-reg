@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# Print register information at given labels.
+#
+# TODO: add option to replace "info registers" with
+#       "info all-registers"
+HELP="Usage: $0 EXE LABEL [ARGS]..."
+TMP=$(mktemp)
+function exit_hook (){ rm $TMP; }
+trap exit_hook EXIT
+EXE=$1; shift;
+LABEL=$1; shift;
+
+cat <<EOF >$TMP
+break $LABEL
+run $@
+info registers
+quit
+EOF
+
+gdb -batch $EXE --command=$TMP 2>/dev/null|sed -n '/^rax/,/^gs/p'
