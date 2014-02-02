@@ -458,7 +458,7 @@ exit 0
 : 10
 :
 ** DONE fold tests into a top-level Makefile
-** TODO man page
+** TODO man pages
 ** TODO make install support
 ** DONE figure out why -8(%rbp) holds the wrong value
 Because GCC doesn't compile code amenable to extra pushing and poping.
