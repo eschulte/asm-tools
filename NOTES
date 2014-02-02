@@ -239,7 +239,7 @@ Simply swaps the order of arguments to =cmp=.
 #+RESULTS:
 : 256
 
-* Tasks [3/6]
+* Tasks [4/6]
 ** DONE Better random seeds
 include pid for multiple launches a second
 ** DONE inspect registers around macro w/gdb
@@ -371,7 +371,7 @@ exit 0
 : 
 : 10
 :
-** TODO fold tests into a top-level Makefile
+** DONE fold tests into a top-level Makefile
 ** TODO man page
 ** TODO make install support
 ** DONE figure out why -8(%rbp) holds the wrong value
