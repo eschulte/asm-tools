@@ -117,7 +117,7 @@ before\@:
 	\cmd    \first, \second    # | perform the original comparison
 after\@:
 TRACE
-	mov     $___mk_ur_r, ___mk_ur_trace # | save ASCII `r' for path tracing
+	movq    $___mk_ur_r, ___mk_ur_trace # | save ASCII `r' for path tracing
 TRACE
 	jmp     ___mk_ur_end_\@    # \-jump past unreliable track to popf
 ___mk_ur_beg_\@:
@@ -135,7 +135,7 @@ ___mk_ur_beg_\@:
 	add     $8, %rsp          # pop rand, expose saved rax
 	xchg    (%rsp), %rax      # swap rax and flags, orig rax, flags on stack
 TRACE
-	mov     $___mk_ur_u, ___mk_ur_trace # save ASCII `u' for path tracing
+	movq    $___mk_ur_u, ___mk_ur_trace # save ASCII `u' for path tracing
 TRACE
 ___mk_ur_end_\@:
 TRACE
