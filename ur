@@ -49,10 +49,20 @@ ___mk_ur_rd:    .quad 0
 DEBUG
 ___mk_ur_enter_\@:
 DEBUG
-	push    %rax
+	## Save everything to memory instead of the stack.
+	## also, save the head of the stack to memory so it
+	## isn't overwritten by pushf.
+	push    %rax # <- this one is what overwrites part of the arguments
+	push    %rbx
+	push    %rcx
 	push    %rdx
 	push    %rsi
 	push    %rdi
+	push    %r8
+	push    %r9
+	push    %r10
+	push    %r11
+	push    %r12
 	mov     ___mk_ur_fd, %rax
 	cmp     $0, %rax
 	jne     ___mk_ur_fd_\@
@@ -69,10 +79,17 @@ ___mk_ur_fd_\@:
 	mov     $___mk_ur_rd, %rsi # read bytes into my_rd
 	mov     $4, %rdx           # length
 	syscall
+	pop     %r12
+	pop     %r11
+	pop     %r10
+	pop     %r9
+	pop     %r8
 	pop     %rdi
 	pop     %rsi
 	pop     %rdx
-	mov     ___mk_ur_rd, %eax # move random bytes into eax
+	pop     %rcx
+	pop     %rbx
+	mov     ___mk_ur_rd, %rax # move random bytes into rax
 	cmp     $65535, %ax       # first 1/2 rand determines if unreliable
 	jae     ___mk_ur_beg_\@   # jump to reliable or unreliable track
 	pop     %rax              # /- reliable path, restore rax
@@ -83,7 +100,7 @@ TRACE
 TRACE
 	jmp     ___mk_ur_end_\@   # \-jump past unreliable track to popf
 ___mk_ur_beg_\@:
-	shr     $16, %eax         # discard 1/2 rand, and line up rest
+	shr     $16, %rax         # discard 1/2 rand, and line up rest
 	and     \mask, %rax       # zero out un-masked bits in rand
 	push    %rax              # save masked rand to the stack
 	mov     24(%rsp), %rax    # bring original rax back for comparison
