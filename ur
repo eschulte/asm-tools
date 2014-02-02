@@ -11,11 +11,14 @@ HELP="Usage: $0 [OPTION]... [INPUT-ASM-FILE]
   -u RATE ----------- set RATE of unreliable computation
   -t ---------------- write trace of (un)reliable cmps to STDERR
   -d ---------------- add labels for debugging
+  -r SOURCE --------- read random bits from SOURCE
+                      (default to /dev/urandom)
   -i[SUFFIX] -------- edit file in place (optional backup at SUFFIX)"
-eval set -- $(getopt hu:tdi:: "$@" || echo "$HELP" && exit 1;)
+eval set -- $(getopt hu:tdr:i:: "$@" || echo "$HELP" && exit 1;)
 RATE=0.1
 SED_OPTS=" "
 DEBUG=""
+RAND="/dev/urandom"
 TRACE=""
 while [ $# -gt 0 ];do
     case $1 in
@@ -23,6 +26,7 @@ while [ $# -gt 0 ];do
         -u)  RATE=$2; shift;;
         -t)  TRACE="yes";;
         -d)  DEBUG="yes";;
+        -r)  RAND=$2; shift;;
         -i)  SED_OPTS+="$1$2"; shift;;
         (--) shift; break;;
         (-*) echo "$HELP" && exit 1;;
@@ -35,7 +39,7 @@ ADJ=$(echo "scale=0;((1 - $RATE) * 65535)/1"|bc)
 SED_CMD="
 # the macro used to replace comparison instructions
 1i\\
-$(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"
+$(cat <<"EOF"|sed 's/\\/\\\\/g;s/\t/\\t/g;s/$/\\/;'|sed "s/ADJ/$ADJ/"|sed "s|RAND|$RAND|"
 TRACE
 	.section	.rodata
 ___mk_ur_u:	.ascii "u"
