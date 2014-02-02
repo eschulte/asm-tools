@@ -1,0 +1,5 @@
+                              asm-tools
+                utilities for modifying x86 assembler
+
+ur ----------- make x86 assembler unreliable
+asm-trace ---- instrument assembler files
