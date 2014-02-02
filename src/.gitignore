@@ -1,0 +1,4 @@
+asm-trace
+*.fasl
+*.lx32fsl
+dumper-*.lisp

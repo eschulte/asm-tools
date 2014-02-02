@@ -21,3 +21,6 @@ endif
 
 asm-trace: asm-trace.lisp
 	$(BA) $(BUILD_APP_FLAGS) --output $@ --entry "asm-trace:main"
+
+clean:
+	rm -f asm-trace *.fasl *.lx32fsl dumper-*.lisp

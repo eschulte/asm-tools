@@ -1,15 +1,14 @@
-INST=./src/asm-trace
-
 .PHONY: check clean
 
-check: $(INST)
-	-@$(MAKE) -C examples/ $(MAKECMDGOALS)
-	-@$(MAKE) --no-print-directory -C etc/ $(MAKECMDGOALS)
+src/%:
+	@$(MAKE) --no-print-directory -C src/ $*
+
+check: src/asm-trace
+	@$(MAKE) --no-print-directory -C etc/ $(MAKECMDGOALS)
 
 view: $(INST)
-	$(MAKE) -C examples/ $(MAKECMDGOALS)
+	@$(MAKE) --no-print-directory -C etc/ $(MAKECMDGOALS)
 
 clean:
-	rm -f asm-trace *.fasl *.lx32fsl dumper-*.lisp
-	@$(MAKE) -C examples/ $(MAKECMDGOALS)
-	@$(MAKE) -C etc/ $(MAKECMDGOALS)
+	$(MAKE) -C src/ $(MAKECMDGOALS)
+	$(MAKE) -C etc/ $(MAKECMDGOALS)
