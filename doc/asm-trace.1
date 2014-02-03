@@ -1,90 +1,80 @@
-                Instrument AT&T Syntax Assembler Files
-
-Use asm-trace to instrument AT&T syntax assembler files (such as those
-produced by "gcc -S") to save  a trace of their execution.  Every code
-label in  the assembler file is  instrumented to print it's  name to a
-file named `trace.out' every time the label is executed.
-
-    # Compile the program and view the code labels
-    $ cd examples/
-    $ gcc -S w-func.c
-    $ grep "^\.L[0-9]" w-func.s
-    .L2:
-    .L1:
-    .L5:
-    .L6:
-
-    # Instrument the program
-    $ ./asm-trace w-func.s w-funcs.out inst >w-func.inst.s
-
-    # Run the instrumented program and view executed labels
-    $ gcc -o w-func.inst w-func.inst.s 
-    $ ./w-func.inst >/dev/null
-    $ cat w-funcs.out
-    6
-    1
-
-Run "make check" to build and confirm functionality.
-
-Run "make view" to build and display annotations alongside the
-original assembler.
-
-    # View annotations alongside the original assembler
-    #     NOTE: data and code portions are traced
-    $ cd examples/
-    $ make view-plain
-    ./plain.inst >/dev/null
-    cat trace.out|sort|uniq -c >trace.counts
-    paste <(../asm-trace plain.s trace.counts label prop) plain.s
-    0               .file   "plain.c"
-    0               .section        .rodata
-    1       .LC0:
-    1               .string "right %d\n"
-    0       .LC1:
-    0               .string "left  %d\n"
-    0               .text
-    0               .globl  main
-    0               .type   main, @function
-    0       main:
-    1       .LFB0:
-    1               .cfi_startproc
-    1               pushq   %rbp
-    1               .cfi_def_cfa_offset 16
-    1               .cfi_offset 6, -16
-    1               movq    %rsp, %rbp
-    1               .cfi_def_cfa_register 6
-    1               subq    $32, %rsp
-    1               movl    %edi, -20(%rbp)
-    1               movq    %rsi, -32(%rbp)
-    1               movl    $1, -4(%rbp)
-    1               movl    $2, -8(%rbp)
-    1               movl    -8(%rbp), %eax
-    1               cmpl    -4(%rbp), %eax
-    1               jle     .L2
-    1               movl    -8(%rbp), %eax
-    1               movl    -4(%rbp), %edx
-    1               addl    %edx, %eax
-    1               movl    %eax, %esi
-    1               movl    $.LC0, %edi
-    1               movl    $0, %eax
-    1               call    printf
-    1               jmp     .L3
-    0       .L2:
-    0               movl    -8(%rbp), %eax
-    0               movl    -4(%rbp), %edx
-    0               addl    %edx, %eax
-    0               movl    %eax, %esi
-    0               movl    $.LC1, %edi
-    0               movl    $0, %eax
-    0               call    printf
-    1       .L3:
-    1               movl    $0, %eax
-    1               leave
-    1               .cfi_def_cfa 7, 8
-    1               ret
-    0               .cfi_endproc
-    0       .LFE0:
-    0               .size   main, .-main
-    0               .ident  "GCC: (GNU) 4.8.1 20130725 (prerelease)"
-    0               .section        .note.GNU-stack,"",@progbits
-    rm plain.inst.s
+.Dd February 2, 2014
+.Dt asm-trace \&1 "asm-trace Manual"
+.Os " "
+.Sh NAME
+.Nm ASM-TRACE
+.Nd instrument assembler files to print trace data
+.Sh SYNOPSIS
+.Nm ASM-TRACE
+asm-file trace-file [ACTIONS]...
+.Sh DESCRIPTION
+.Nm
+instruments assembler files (such as those produced by "gcc -S") to
+save a trace of their execution.  Every code label in the assembler
+file is instrumented to print it's name to a file named `trace.out'
+every time the label is executed.
+.Pp
+.
+.Sh ACTIONS
+.Nm
+performs the following actions.
+.Pp
+.Bl -tag -width ".." -compact
+.It Cm inst
+instrument the user supplied asm-file with instructions to print a
+trace of the labels used during execution.  Trace is written to user
+supplied trace-file.
+.Pp
+.It Cm label
+expand the label trace in trace-file through all executed instructions
+in asm-file resulting in a line trace of all executed instructions.
+Expansion propagates trace counts from labels through contiguous
+subsequent non-branching asm instructions.
+.Pp
+.It Cm prop
+propagate a line trace of executed assembly instructions to referenced
+labels in the data section of the assembly file.
+.
+.Pp
+.Sh EXAMPLES
+.Pp
+Instrument a program for tracing
+.Pp
+.Dl asm-trace w-func.s trace.out inst >w-func.inst.s
+.Pp
+Run the instrumented program and view executed labels.
+.Pp
+.Dl gcc -o w-func.inst w-func.inst.s
+.Dl ./w-func.inst >/dev/null
+.Dl cat trace.out
+.Pp
+View annotations alongside the original assembler.  Both dta and code
+portions are traced.
+.Pp
+.Bd
+  cat trace.out|sort|uniq -c >counts
+  paste <(asm-trace plain.s counts label prop) plain.s
+      0               .file   "plain.c"
+      0               .section        .rodata
+      1       .LC0:
+      1               .string "right %d\n"
+      0       .LC1:
+      0               .string "left  %d\n"
+      0               .text
+      0               .globl  main
+      0               .type   main, @function
+      0       main:
+      1       .LFB0:
+      1               .cfi_startproc
+      1               pushq   %rbp
+      1               .cfi_def_cfa_offset 16
+      1               .cfi_offset 6, -16
+      1               movq    %rsp, %rbp
+.Ed
+.Pp
+.
+.Sh AUTHORS
+.An -nosplit
+.Pp
+Written by Eric Schulte.
+.Pp

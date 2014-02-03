@@ -61,12 +61,12 @@ passing the results back to gcc for linking into an executable.  All
 cmp instructions in the resulting executable will return random
 results 1/10th of the time.
 .Pp
-\&  gcc -S etc/printer.c -o -|./ur|gcc -x assembler - -o etc/printer-ur
+.Dl gcc -S etc/printer.c -o -|./ur|gcc -x assembler - -o etc/printer-ur
 .Pp
 To demonstrate the effect, run the resulting executable a couple of
 hundred times with the following.
 .Pp
-\&  for i in {0..1000};do ./etc/printer-ur;done|grep -c "1 > 2"
+.Dl for i in {0..1000};do ./etc/printer-ur;done|grep -c "1 > 2"
 .Pp
 .
 .Sh AUTHORS
