@@ -1,14 +1,76 @@
-                                  ur
-                    make x86 assembler unreliable
-
-SYNOPSIS
-    ur [OPTION]... [INPUT-ASM-FILE]
-
-DESCRIPTION
-    Transforms x86 assembler replacing specified instructions (e.g.,
-    cmpl) with unreliable counterparts which do the wrong thing with a
-    specified probability.
-
-EXAMPLE
-    $ gcc -S etc/printer.c -o -|./ur|gcc -x assembler - -o etc/printer-ur
-    $ for i in {0..1000};do ./etc/printer-ur;done|grep -c "1 > 2"
+.Dd February 2, 2014
+.Dt ur \&1 "ur Manual"
+.Os " "
+.Sh NAME
+.Nm UR
+.Nd make x86 assembler unreliable
+.Sh SYNOPSIS
+.Nm ur
+-[t|d] [-u RATE] [-r SOURCE] [-iSUFFIX] [file]
+.Sh DESCRIPTION
+.Nm
+transforms x86 assembler replacing cmp instructions with unreliable
+counterparts which do the wrong thing with a user specified
+probability.
+.Pp
+.Nm
+processes a text assembly file as with sed, replacing cmp instructions
+with an assembler macro which simulates unreliable behavior by
+randomly assigning the flags set by the cmp instruction.  These flags
+are often used to condition subsequent conditional jumps.
+.Pp
+.Nm
+may be invoked in the same manner as the sed utility either reading
+input from STDIN, or from a file given as the last argument on the
+command line.
+.
+.Sh OPTIONS
+The following options change the default
+.Nm
+behavior.
+.Pp
+.Bl -tag -width ".." -compact
+.It Cm -u RATE
+simulate unreliable behavior RATE fraction of the time where RATE is a
+decimal between 0 and 1 inclusive.  Default to a RATE of 0.1.
+.Pp
+.It Cm -t
+print tracing information every time a cmp instruction is simulated.
+For each cmp instruction taken either print "r" when the normal
+"reliable" behavior is simulated or print "u" when "unreliable"
+behavior is simulated by randomly setting all flags after the
+comparison operation.
+.Pp
+.It Cm -d
+add labels for debugging.  Useful as gdb breakpoints.
+.Pp
+.It Cm -r SOURCE
+read random bits from SOURCE.  Defaults to /dev/urandom.
+.Pp
+.It Cm -i[SUFFIX]
+alter specified file in place as with the -i option to sed.  If
+optional SUFFIX is specified save a back of the original file with the
+SUFFIX extension.
+.
+.Pp
+.Sh EXAMPLES
+.Pp
+Pipe the assembler compiled with gcc through
+.Nm
+passing the results back to gcc for linking into an executable.  All
+cmp instructions in the resulting executable will return random
+results 1/10th of the time.
+.Pp
+\&  gcc -S etc/printer.c -o -|./ur|gcc -x assembler - -o etc/printer-ur
+.Pp
+To demonstrate the effect, run the resulting executable a couple of
+hundred times with the following.
+.Pp
+\&  for i in {0..1000};do ./etc/printer-ur;done|grep -c "1 > 2"
+.Pp
+.
+.Sh AUTHORS
+.An -nosplit
+.Pp
+Written by Eric Schulte.
+.Pp
