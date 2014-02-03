@@ -122,9 +122,7 @@ ___mk_ur_fd_\@:
 	jae     ___mk_ur_beg_\@    # jump to reliable or unreliable track
 	mov     ___mk_ur_top, %rax # /- reliable path, restore rax
 	xchg    %rax, (%rsp)
-before\@:
 	\cmd    \first, \second    # | perform the original comparison
-after\@:
 TRACE
 	movq    $___mk_ur_r, ___mk_ur_trace # | save ASCII `r' for path tracing
 TRACE
