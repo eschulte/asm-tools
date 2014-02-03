@@ -96,30 +96,35 @@ The special variable MATCH is bound to the match data"
       (mapc (lambda (line)
               (write (concatenate 'string line (list #\Newline))
                      :stream stream :escape nil))
-            `("	.macro __do_trace length, name"
-              ,@(mapcar [#'string-downcase {format nil "	pushq	%~a"}]
-                        regs)
-              " 	movq	__tracer_fd(%rip), %rax"
-              " 	testq	%rax, %rax"
-              " 	jne	TRACEALREADY\\@"
-              " 	movl	$.TRACE0, %esi"
-              " 	movl	$.TRACE1, %edi"
-              " 	call	fopen"
-              " 	movq	%rax, __tracer_fd(%rip)"
-              " TRACEALREADY\\@:"
-              " 	movq	__tracer_fd(%rip), %rax"
-              " 	movq	%rax, %rcx"
-              " 	movl	$\\length, %edx"
-              " 	movl	$1, %esi"
-              " 	movl	$.TRACES\\name, %edi"
-              " 	call	fwrite"
-              ,@(mapcar [#'string-downcase {format nil "	popq	%~a"}]
-                        (reverse regs))
-              "	.endm"
-              "	.comm	__tracer_fd,8,8"
+            `(".comm	__tracer_fd,8,8"
               "	.section	.rodata"
               ".TRACE0:	.string \"w\""
-              ,(format nil ".TRACE1:~%	.string \"~a\"" trace-out))))
+              ,(format nil ".TRACE1: .string \"~a\"" trace-out)
+              "	.section	.data"
+              ,@(mapcar {format nil "__tracer_~a:    .quad 0"}
+                        (mapcar [#'string-downcase #'symbol-name] regs))
+              "	.macro __do_trace length, name"
+              ,@(mapcar {format nil "mov %~a, __tracer_~a"}
+                        (mapcar [#'string-downcase #'symbol-name] regs)
+                        (mapcar [#'string-downcase #'symbol-name] regs))
+              "	movq	__tracer_fd(%rip), %rax"
+              "	testq	%rax, %rax"
+              "	jne	TRACEALREADY\\@"
+              "	movl	$.TRACE0, %esi"
+              "	movl	$.TRACE1, %edi"
+              "	call	fopen"
+              "	movq	%rax, __tracer_fd(%rip)"
+              "TRACEALREADY\\@:"
+              "	movq	__tracer_fd(%rip), %rax"
+              "	movq	%rax, %rcx"
+              "	movl	$\\length, %edx"
+              "	movl	$1, %esi"
+              "	movl	$.TRACES\\name, %edi"
+              "	call	fwrite"
+              ,@(mapcar {format nil "mov __tracer_~a, %~a"}
+                        (mapcar [#'string-downcase #'symbol-name] regs)
+                        (mapcar [#'string-downcase #'symbol-name] regs))
+              ".endm")))
     (flet ((print-trace (line name)
              (list line (format nil "	__do_trace	~a, ~a"
                                 (1+ (length name)) name))))

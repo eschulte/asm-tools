@@ -11,7 +11,7 @@ UR=../src/ur
 	$(UR) $< > $@
 
 %.inst.s: %.s
-	@$(INST) $^ trace.out inst > $@
+	$(INST) $^ trace.out inst > $@
 
 %: %.s
 	$(CC) $< -o $@
@@ -91,4 +91,4 @@ check: check-asm-trace check-ur
 view: view-plain view-w-func
 
 clean:
-	rm -f *.inst *.inst.s plain w-func trace.out trace.counts
+	rm -f *.inst *.inst.s reg-* *-ur plain w-func trace.out trace.counts

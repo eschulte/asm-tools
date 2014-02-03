@@ -1,10 +1,12 @@
 .PHONY: check clean
 
+all: check
+
 src/%:
 	@$(MAKE) --no-print-directory -C src/ $*
 
 check: src/asm-trace
-	@$(MAKE) --no-print-directory -C etc/ $(MAKECMDGOALS)
+	$(MAKE) --no-print-directory -C etc/ check
 
 view: $(INST)
 	@$(MAKE) --no-print-directory -C etc/ $(MAKECMDGOALS)
