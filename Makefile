@@ -3,7 +3,7 @@ DOCDIR=$(DESTDIR)/share/man/man1
 
 .PHONY: check clean
 
-all: arc/asm-trace
+all: src/asm-trace
 
 src/%:
 	@$(MAKE) --no-print-directory -C src/ $*
