@@ -1,5 +1,5 @@
 BINDIR=$(DESTDIR)/usr/bin/
-DOCDIR=$(DESTDIR)/share/man/man1
+DOCDIR=$(DESTDIR)/usr/share/man/man1
 
 .PHONY: check clean
 
