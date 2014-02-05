@@ -1,6 +1,9 @@
+BINDIR=$(DESTDIR)/usr/bin/
+DOCDIR=$(DESTDIR)/share/man/man1
+
 .PHONY: check clean
 
-all: check
+all: arc/asm-trace
 
 src/%:
 	@$(MAKE) --no-print-directory -C src/ $*
@@ -14,3 +17,11 @@ view: $(INST)
 clean:
 	$(MAKE) -C src/ $(MAKECMDGOALS)
 	$(MAKE) -C etc/ $(MAKECMDGOALS)
+
+install: src/asm-trace src/ur doc/ur.1 doc/asm-trace.1
+	mkdir -p $(DOCDIR)
+	install -Dm644 doc/ur.1 $(DOCDIR)/ur.1
+	install -Dm644 doc/asm-trace.1 $(DOCDIR)/asm-trace.1
+	mkdir -p $(BINDIR)
+	install -Dm755 src/ur $(BINDIR)
+	install -Dm755 src/asm-trace $(BINDIR)
