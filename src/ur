@@ -119,7 +119,7 @@ ___mk_ur_fd_\@:
 	mov     ___mk_ur_r12, %r12
 	mov     ___mk_ur_rd, %rax  # move random bytes into rax
 	cmp     $ADJ, %ax        # first 1/2 rand determines if unreliable
-	jae     ___mk_ur_beg_\@    # jump to reliable or unreliable track
+	ja      ___mk_ur_beg_\@    # jump to reliable or unreliable track
 	mov     ___mk_ur_top, %rax # /- reliable path, restore rax
 	xchg    %rax, (%rsp)
 	\cmd    \first, \second    # | perform the original comparison
