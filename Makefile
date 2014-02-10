@@ -11,6 +11,9 @@ src/%:
 check: src/asm-trace
 	$(MAKE) --no-print-directory -C etc/ check
 
+check-ur:
+	$(MAKE) --no-print-directory -C etc/ $@
+
 view: $(INST)
 	@$(MAKE) --no-print-directory -C etc/ $(MAKECMDGOALS)
 

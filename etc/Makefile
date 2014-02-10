@@ -27,7 +27,7 @@ FAIL=\e[1;1m\e[1;31mFAIL\e[1;0m
 stack-test.%: %
 	-@./$< 2>/dev/null; \
 	if [ $$? -eq 12 ];then printf "$(PASS)"; else printf "$(FAIL)"; fi; \
-	echo " stack preservation across macro"
+	echo " stack preservation across macro: $<"
 
 register-test.%: %.s
 	-@for reg in ebx ecx edx esi edi;do \
@@ -38,7 +38,7 @@ register-test.%: %.s
 		printf "$(FAIL)" \
 		echo -n " '$$?'!='12'"; \
 	    fi; \
-	    echo " register $$reg preservation across macro"; \
+	    echo " register $$reg preservation across macro: $<"; \
 	done
 
 check-plain: plain.inst plain.s
