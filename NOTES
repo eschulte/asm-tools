@@ -325,7 +325,11 @@ Simply swaps the order of arguments to =cmp=.
 #+RESULTS:
 : 256
 
-* Tasks [6/7]
+* Tasks [6/8]
+** TODO ur tracing causes segfaults
+: ./_bubble_c_gcc_Os_ur_0 1 4 56 2 43 8 76 12 43 7
+: r(...3424...)rSegmentation fault (core dumped)
+
 ** DONE Better random seeds
 include pid for multiple launches a second
 ** DONE inspect registers around macro w/gdb

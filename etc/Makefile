@@ -10,6 +10,9 @@ UR=../src/ur
 %-ur.s: %.s
 	$(UR) $< > $@
 
+%-ur-t.s: %.s
+	$(UR) -t $< > $@
+
 %.inst.s: %.s
 	$(INST) $^ trace.out inst > $@
 
@@ -21,16 +24,17 @@ UR=../src/ur
 PASS=\e[1;1m\e[1;32mPASS\e[1;0m
 FAIL=\e[1;1m\e[1;31mFAIL\e[1;0m
 
-stack-test: stack-ur
-	-@./$<; if [ $$? -eq 12 ];then printf "$(PASS)"; else printf "$(FAIL)"; fi; \
+stack-test.%: %
+	-@./$< 2>/dev/null; \
+	if [ $$? -eq 12 ];then printf "$(PASS)"; else printf "$(FAIL)"; fi; \
 	echo " stack preservation across macro"
 
-register-test:
+register-test.%: %.s
 	-@for reg in ebx ecx edx esi edi;do \
-	    cat register.s|sed "s/reg/$$reg/"|gcc -x assembler - -o reg-$$reg; \
-	    ./reg-$$reg; \
+	    cat $<|sed "s/reg/$$reg/"|gcc -x assembler - -o $<-$$reg; \
+	    ./$<-$$reg 2>/dev/null; \
 	    if [ $$? -eq 12 ];then printf "$(PASS)"; else \
-		./reg-$$reg; \
+		./$<-$$reg 2>/dev/null; \
 		printf "$(FAIL)" \
 		echo -n " '$$?'!='12'"; \
 	    fi; \
@@ -78,7 +82,8 @@ view-w-func: w-func.inst w-func.s
 check-ur-header:
 	@printf "\e[1;1m-------------ur-----------------\n"
 
-check-ur: check-ur-header stack-test register-test
+check-ur: check-ur-header stack-ur stack-ur-t stack-test.stack-ur stack-test.stack-ur-t \
+	register-ur.s register-ur-t.s register-test.register-ur register-test.register-ur-t
 
 check-asm-trace-header:
 	@printf "\e[1;1m----------asm-trace-------------\n"
@@ -91,4 +96,4 @@ check: check-asm-trace check-ur
 view: view-plain view-w-func
 
 clean:
-	rm -f *.inst *.inst.s reg-* *-ur plain w-func trace.out trace.counts
+	rm -f *.inst *.inst.s reg-* *-ur *-ur-t *-ur.s *-ur-t.s plain w-func trace.out trace.counts *-e{b,c,d,s}{x,i}
