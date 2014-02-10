@@ -146,17 +146,21 @@ TRACE
 TRACE
 ___mk_ur_end_\@:
 TRACE
-	mov     ___mk_ur_trace, %rsi # string to write
-	mov     %rax, ___mk_ur_rbx # save registers clobbered by the syscall
+	mov     %rsi, ___mk_ur_rsi # |
+	mov     %rax, ___mk_ur_rbx # |
+	mov     %rcx, ___mk_ur_rcx # |
 	mov     %rdi, ___mk_ur_rdi # |
-	mov     %rdx, ___mk_ur_rdx # \-
-	mov     $1, %rax           # write system call
-	mov     $2, %rdi           # STDERR file descriptor
-	mov     $1, %rdx           # length
+	mov     %rdx, ___mk_ur_rdx # \- save registers clobbered by the syscall
+	mov     ___mk_ur_trace, %rsi # string to write
+	mov     $1, %rax             # write system call
+	mov     $2, %rdi             # STDERR file descriptor
+	mov     $1, %rdx             # length
 	syscall
-	mov     ___mk_ur_rdx, %rdx # /-
+	mov     ___mk_ur_rdx, %rdx # /- restore saved registers
+	mov     ___mk_ur_rsi, %rsi # |
 	mov     ___mk_ur_rdi, %rdi # |
-	mov     ___mk_ur_rbx, %rax # restore saved registers
+	mov     ___mk_ur_rcx, %rcx # |
+	mov     ___mk_ur_rbx, %rax # |
 TRACE
 	mov     %rax, (%rsp)
 	mov     ___mk_ur_top, %rax
