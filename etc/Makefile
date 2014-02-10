@@ -30,7 +30,7 @@ stack-test.%: %
 	echo " stack preservation across macro: $<"
 
 register-test.%: %.s
-	-@for reg in ebx ecx edx esi edi;do \
+	-@for reg in ebx ecx edx esi edi r8 r9 r10 r11 r12 r13 r14 r15;do \
 	    cat $<|sed "s/reg/$$reg/"|gcc -x assembler - -o $<-$$reg; \
 	    ./$<-$$reg 2>/dev/null; \
 	    if [ $$? -eq 12 ];then printf "$(PASS)"; else \

@@ -325,10 +325,13 @@ Simply swaps the order of arguments to =cmp=.
 #+RESULTS:
 : 256
 
-* Tasks [7/8]
-** DONE ur tracing causes segfaults
+* Tasks [6/8]
+** TODO ur tracing causes segfaults
 : ./_bubble_c_gcc_Os_ur_0 1 4 56 2 43 8 76 12 43 7
 : r(...3424...)rSegmentation fault (core dumped)
+
+: ./results/unreliable/_insertion_c_gcc_O2_ur_0 1 4 56 2 43 8 76 12 43 7 r(...)r-1420015827 -1198630388 -1075053569 -1069877418 -1003484672 -918489258 -600115370 -511340856 -511340848 -511340848
+: zsh: segmentation fault (core dumped)  ./results/unreliable/_insertion_c_gcc_O2_ur_0 1 4 56 2 43 8 76 12 43 7
 
 ** DONE Better random seeds
 include pid for multiple launches a second

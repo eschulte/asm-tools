@@ -146,10 +146,15 @@ TRACE
 TRACE
 ___mk_ur_end_\@:
 TRACE
-	mov     %rsi, ___mk_ur_rsi # |
+	mov     %r8, ___mk_ur_r8   # |
+	mov     %r9, ___mk_ur_r9   # |
+	mov     %r10, ___mk_ur_r10 # |
+	mov     %r11, ___mk_ur_r11 # |
+	mov     %r12, ___mk_ur_r12 # |
 	mov     %rax, ___mk_ur_rbx # |
 	mov     %rcx, ___mk_ur_rcx # |
 	mov     %rdi, ___mk_ur_rdi # |
+	mov     %rsi, ___mk_ur_rsi # |
 	mov     %rdx, ___mk_ur_rdx # \- save registers clobbered by the syscall
 	mov     ___mk_ur_trace, %rsi # string to write
 	mov     $1, %rax             # write system call
@@ -161,6 +166,11 @@ TRACE
 	mov     ___mk_ur_rdi, %rdi # |
 	mov     ___mk_ur_rcx, %rcx # |
 	mov     ___mk_ur_rbx, %rax # |
+	mov     ___mk_ur_r12, %r12 # |
+	mov     ___mk_ur_r11, %r11 # |
+	mov     ___mk_ur_r10, %r10 # |
+	mov     ___mk_ur_r9, %r9   # |
+	mov     ___mk_ur_r8, %r8   # |
 TRACE
 	mov     %rax, (%rsp)
 	mov     ___mk_ur_top, %rax
