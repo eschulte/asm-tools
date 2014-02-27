@@ -51,26 +51,26 @@
 	mov     \\value, %rsi\
 	mov     $1, %rax         # write system call\
 	mov     $2, %rdi         # STDERR file descriptor\
-	mov     $\\length, %rdx   # length\
+	mov     $\\length, %rdx  # length\
 	syscall\
 	.endm\
 	.macro ___dig name\
 	___save\
 	___print        $___dig_\\name, ___dig_length_\\name\
-	___print        %rax, 4\
-	___print        %rbx, 4\
-	___print        %rcx, 4\
-	___print        %rdx, 4\
-	___print        %rsi, 4\
-	___print        %rdi, 4\
-	___print        %r8,  4\
-	___print        %r9,  4\
-	___print        %r10, 4\
-	___print        %r11, 4\
-	___print        %r12, 4\
-	___print        %r13, 4\
-	___print        %r14, 4\
-	___print        %r15, 4\
+	___print        $___dig_rax, 4\
+	___print        $___dig_rbx, 4\
+	___print        $___dig_rcx, 4\
+	___print        $___dig_rdx, 4\
+	___print        $___dig_rsi, 4\
+	___print        $___dig_rdi, 4\
+	___print        $___dig_r8,  4\
+	___print        $___dig_r9,  4\
+	___print        $___dig_r10, 4\
+	___print        $___dig_r11, 4\
+	___print        $___dig_r12, 4\
+	___print        $___dig_r13, 4\
+	___print        $___dig_r14, 4\
+	___print        $___dig_r15, 4\
 	___print        $___dig_n, 1\
 	___restore\
 	.endm
@@ -80,8 +80,8 @@
 p;
 s/\(^[^[:space:]]\+\):/	___dig  \1/;
 p;
-s/^	___dig  \(.\+\)$/	___dig_\1:\n\t.ascii\t"\1:"\n\t.set\t___dig_length_\1, .-___dig_\1/;
-h;d
+s/^	___dig  \([^[:space:]]\+\)/___dig_\1:\n\t.ascii\t"\1:"\n\t.set\t___dig_length_\1, .-___dig_\1/;
+H;d
 }
 
 # print out the data sections
@@ -98,8 +98,11 @@ ___dig_r9:      .quad 0\
 ___dig_r10:     .quad 0\
 ___dig_r11:     .quad 0\
 ___dig_r12:     .quad 0\
+___dig_r13:     .quad 0\
+___dig_r14:     .quad 0\
+___dig_r15:     .quad 0\
 	.section	.rodata\
 ___dig_n:	.ascii "\\n"
 
 # including all cached label strings
-g;s/^[[:space:]]\+//}
+g}
