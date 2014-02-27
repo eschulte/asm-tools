@@ -1,19 +1,3 @@
-	.section	.rodata
-___dig_main:    .string "main:"
-___dig_big:     .string "big:"
-___dig_n:	.ascii "\n"
-        .section        .data
-___dig_rax:     .quad 0
-___dig_rbx:     .quad 0
-___dig_rcx:     .quad 0
-___dig_rdx:     .quad 0
-___dig_rsi:     .quad 0
-___dig_rdi:     .quad 0
-___dig_r8:      .quad 0
-___dig_r9:      .quad 0
-___dig_r10:     .quad 0
-___dig_r11:     .quad 0
-___dig_r12:     .quad 0
         .macro ___save
 	mov     %rax, ___dig_rax
 	mov     %rbx, ___dig_rbx
@@ -80,3 +64,19 @@ big:
         mov     $60, %rax
         mov     $1, %rdi
         syscall
+	.section	.rodata
+___dig_main:    .string "main:"
+___dig_big:     .string "big:"
+___dig_n:	.ascii "\n"
+        .section        .data
+___dig_rax:     .quad 0
+___dig_rbx:     .quad 0
+___dig_rcx:     .quad 0
+___dig_rdx:     .quad 0
+___dig_rsi:     .quad 0
+___dig_rdi:     .quad 0
+___dig_r8:      .quad 0
+___dig_r9:      .quad 0
+___dig_r10:     .quad 0
+___dig_r11:     .quad 0
+___dig_r12:     .quad 0
