@@ -27,8 +27,8 @@
 	mov     %r10, ___dig_r10\
 	mov     %r11, ___dig_r11\
 	mov     %r12, ___dig_r12\
-        .endm\
-        .macro ___restore\
+	.endm\
+	.macro ___restore\
 	mov     ___dig_r12, %r12\
 	mov     ___dig_r11, %r11\
 	mov     ___dig_r10, %r10\
@@ -40,17 +40,17 @@
 	mov     ___dig_rcx, %rcx\
 	mov     ___dig_rbx, %rbx\
 	mov     ___dig_rax, %rax\
-        .endm\
-        .macro ___print value, length\
-        mov     \value, %rsi\
-        mov     $1, %rax         # write system call\
+	.endm\
+	.macro ___print value, length\
+	mov     \\value, %rsi\
+	mov     $1, %rax         # write system call\
 	mov     $2, %rdi         # STDERR file descriptor\
-	mov     $\length, %rdx   # length\
-        syscall\
-        .endm\
-	.macro ___dig name, length\
-        ___save\
-	___print        $___dig_\name, \length\
+	mov     $\\length, %rdx   # length\
+	syscall\
+	.endm\
+	.macro ___dig name\
+	___save\
+	___print        $___dig_\\name, ___dig_length_\\name\
 	___print        %rax, 4\
 	___print        %rbx, 4\
 	___print        %rcx, 4\
@@ -62,19 +62,22 @@
 	___print        %r10, 4\
 	___print        %r11, 4\
 	___print        %r12, 4\
-        ___print        $___dig_n, 1\
-        ___restore\
-        .endm
+	___print        $___dig_n, 1\
+	___restore\
+	.endm
 
 # save all labels, and print an appropriate macro invocation
 /^[^[:space:]]\+:/{
-p;s/\(^[^[:space:]]\+\):/	___dig  \1, 4/;
-p;s/^	___dig  \([^,]\+\), 4$/	__dig_\1:	.string "\1:"/;h;d
+p;
+s/\(^[^[:space:]]\+\):/	___dig  \1/;
+p;
+s/^	___dig  \(.\+\)$/	___dig_\1:\n\t.ascii\t"\1:"\n\t.set\t___dig_length_\1, .-___dig_\1/;
+h;d
 }
 
 # print out the data sections
 ${i\
-        .section        .data\
+	.section        .data\
 ___dig_rax:     .quad 0\
 ___dig_rbx:     .quad 0\
 ___dig_rcx:     .quad 0\
