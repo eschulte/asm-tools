@@ -120,7 +120,7 @@ ___dig_push_digit_\\@:\
         add     $512, %rdx           #        \\->end in rdx\
         sub     %rdi, %rdx      # subtract buffer start -> buffer length in rdx\
         add     $1, %rdx        # with an extra one for the space\
-        mov     $1, %rdi        # STDOUT file descriptor\
+        mov     $2, %rdi        # STDERR file descriptor\
         syscall                 # print buffer contents\
         ___dig_restore\
         .endm
