@@ -42,13 +42,8 @@
         ## rbx --- holds the divisor
         ## rcx --- temporary storage
         ## rdx --- division remainder
-        ## TODO: rdi --- location of destination buffer
 	mov     \name, %rax    # put the value to write in rax
         mov     $10, %rbx      # divisor
-        ## byte storage setup
-        std                   # set direction flag to count backwards
-        mov     $___dig_buffer, %rdi # buffer start
-        add     $64, %rdi     #        \->end in rdx
 ### divide by 10, push remainder into buffer
 push_digit_\@:
         ## divide off the largest power of ten
@@ -64,36 +59,40 @@ push_digit_\@:
         mov     %rcx, %rax      # restore the quotient
         or      %rax, %rax      # is quotient zero?
         jnz     push_digit_\@   # if not then repeat
-        ## print the accumulated buffer
         mov     $32, %rax       # place a space before the number
         stosb
-        mov     %rdi, %rsi      # pointer to 1-before filled front of buffer
-        add     $1, %rsi        # pointer to beginning of decimal
-        mov     $1, %rax        # write system call
-	mov     $___dig_buffer, %rdx   # buffer start
-        add     $64, %rdx       #        \->end in rdx
-        sub     %rdi, %rdx      # subtract buffer start -> buffer length in rdx
-        add     $1, %rdx        # with an extra one for the space
-        mov     $1, %rdi        # STDOUT file descriptor
-        syscall                 # print buffer contents
         ## return
         .endm
 	.macro ___dig_print_registers
         ___dig_save
-        ___dig_printer ___dig_rax
-        ___dig_printer ___dig_rbx
-	___dig_printer ___dig_rcx
-	___dig_printer ___dig_rdx
-        ___dig_printer ___dig_rsi
-        ___dig_printer ___dig_rdi
-        ___dig_printer ___dig_r8
-        ___dig_printer ___dig_r9
-        ___dig_printer ___dig_r10
-        ___dig_printer ___dig_r11
-        ___dig_printer ___dig_r12
-        ___dig_printer ___dig_r13
-        ___dig_printer ___dig_r14
+        ## byte storage setup
+        std                    # set direction flag to count backwards
+        mov     $___dig_buffer, %rdi # buffer start
+        add     $512, %rdi           #        \->end in rdx
         ___dig_printer ___dig_r15
+        ___dig_printer ___dig_r14
+        ___dig_printer ___dig_r13
+        ___dig_printer ___dig_r12
+        ___dig_printer ___dig_r11
+        ___dig_printer ___dig_r10
+        ___dig_printer ___dig_r9
+        ___dig_printer ___dig_r8
+        ___dig_printer ___dig_rdi
+        ___dig_printer ___dig_rsi
+	___dig_printer ___dig_rdx
+	___dig_printer ___dig_rcx
+        ___dig_printer ___dig_rbx
+        ___dig_printer ___dig_rax
+        ## print the accumulated buffer
+        mov     %rdi, %rsi      # pointer to 1-before filled front of buffer
+        add     $1, %rsi        # pointer to beginning of text
+        mov     $1, %rax        # write system call
+	mov     $___dig_buffer, %rdx # buffer start
+        add     $512, %rdx           #        \->end in rdx
+        sub     %rdi, %rdx      # subtract buffer start -> buffer length in rdx
+        add     $1, %rdx        # with an extra one for the space
+        mov     $1, %rdi        # STDOUT file descriptor
+        syscall                 # print buffer contents
         ___dig_restore
         .endm
 	.section        .data
@@ -111,7 +110,7 @@ ___dig_r12:     .quad 0
 ___dig_r13:     .quad 0
 ___dig_r14:     .quad 0
 ___dig_r15:     .quad 0
-___dig_buffer:  .skip 64
+___dig_buffer:  .skip 512
 .text
 .global main
 main:
