@@ -9,3 +9,4 @@
 !stack.s
 !register.s
 !random.s
+!register-print.s
