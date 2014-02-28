@@ -63,12 +63,13 @@ push_digit_\@:
         stosb
         ## return
         .endm
-	.macro ___dig_print_registers
+	.macro ___dig_print_registers name
         ___dig_save
         ## byte storage setup
         std                    # set direction flag to count backwards
         mov     $___dig_buffer, %rdi # buffer start
         add     $512, %rdi           #        \->end in rdx
+        ## queue up register values
         ___dig_printer ___dig_r15
         ___dig_printer ___dig_r14
         ___dig_printer ___dig_r13
@@ -83,9 +84,16 @@ push_digit_\@:
 	___dig_printer ___dig_rcx
         ___dig_printer ___dig_rbx
         ___dig_printer ___dig_rax
+        ## include label name
+        add     $1, %rdi        # pointer to beginning of text
+        sub     $___dig_length_\name, %rdi # make room for label
+        mov     $___dig_\name, %rsi        # label string source
+        cld                   # switch string direction back to foward
+        mov     $___dig_length_\name, %rcx # number of bytes to move
+        rep     movsb
         ## print the accumulated buffer
-        mov     %rdi, %rsi      # pointer to 1-before filled front of buffer
-        add     $1, %rsi        # pointer to beginning of text
+        sub     $___dig_length_\name, %rdi # reposition to before label
+        mov     %rdi, %rsi      # beginning of entire string to print
         mov     $1, %rax        # write system call
 	mov     $___dig_buffer, %rdx # buffer start
         add     $512, %rdx           #        \->end in rdx
@@ -118,7 +126,11 @@ main:
         mov     $1, %rbx
         mov     $2, %rcx
         mov     $3, %rdx
-        ___dig_print_registers
+        ___dig_print_registers main
         mov     $60, %rax
         mov     $0, %rdi
         syscall
+        .section .rodata
+___dig_main:
+        .ascii  "main:"
+        .set    ___dig_length_main, .-___dig_main
