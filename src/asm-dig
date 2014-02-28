@@ -123,19 +123,7 @@ ___dig_push_digit_\\@:\
         mov     $2, %rdi        # STDERR file descriptor\
         syscall                 # print buffer contents\
         ___dig_restore\
-        .endm
-
-# save all labels, and print an appropriate macro invocation
-/^[^[:space:]]\+:/{
-p;
-s/\(^[^[:space:]]\+\):/	___dig  \1/;
-p;
-s/^	___dig  \([^[:space:]]\+\)/___dig_\1:\n\t.ascii\t"\1"\n\t.set\t___dig_length_\1, .-___dig_\1/;
-H;d
-}
-
-# print out the data sections
-${i\
+        .endm\
 	.section        .data\
 ___dig_rax:     .quad 0\
 ___dig_rbx:     .quad 0\
@@ -152,7 +140,17 @@ ___dig_r13:     .quad 0\
 ___dig_r14:     .quad 0\
 ___dig_r15:     .quad 0\
 ___dig_buffer:  .skip 512\
-	.section	.rodata
 
-# including all cached label strings
-g}
+# save all labels which occur between .text and .section lines
+# and print an appropriate macro invocation for such labels
+/^[[:space:]]*\.text/,/^[[:space:]]*\.section/{
+p;                                   # print everything
+s/\(^[^[:space:]]\+\):/	___dig  \1/; # match labels
+/	___dig  /!d;                 # delete all non-labels
+                                     # (rest of block is only labels)
+p;
+i\
+	.section	.rodata
+s/^	___dig  \([^[:space:]]\+\)/___dig_\1:\n\t.ascii\t"\1"\n\t.set\t___dig_length_\1, .-___dig_\1\n\t.text/;
+p;d;
+}
