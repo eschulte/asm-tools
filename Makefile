@@ -27,4 +27,5 @@ install: src/asm-trace src/ur doc/ur.1 doc/asm-trace.1
 	install -Dm644 doc/asm-trace.1 $(DOCDIR)/asm-trace.1
 	mkdir -p $(BINDIR)
 	install -Dm755 src/ur $(BINDIR)
+	install -Dm755 src/asm-dig $(BINDIR)
 	install -Dm755 src/asm-trace $(BINDIR)
