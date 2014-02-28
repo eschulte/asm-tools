@@ -130,7 +130,7 @@ ___dig_push_digit_\\@:\
 p;
 s/\(^[^[:space:]]\+\):/	___dig  \1/;
 p;
-s/^	___dig  \([^[:space:]]\+\)/___dig_\1:\n\t.ascii\t"\1:"\n\t.set\t___dig_length_\1, .-___dig_\1/;
+s/^	___dig  \([^[:space:]]\+\)/___dig_\1:\n\t.ascii\t"\1"\n\t.set\t___dig_length_\1, .-___dig_\1/;
 H;d
 }
 
