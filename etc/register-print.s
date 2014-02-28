@@ -1,3 +1,35 @@
+	.macro ___dig_save
+	mov     %rax, ___dig_rax
+	mov     %rbx, ___dig_rbx
+	mov     %rcx, ___dig_rcx
+	mov     %rdx, ___dig_rdx
+	mov     %rsi, ___dig_rsi
+	mov     %rdi, ___dig_rdi
+	mov     %r8,  ___dig_r8
+	mov     %r9,  ___dig_r9
+	mov     %r10, ___dig_r10
+	mov     %r11, ___dig_r11
+	mov     %r12, ___dig_r12
+	mov     %r13, ___dig_r13
+	mov     %r14, ___dig_r14
+	mov     %r15, ___dig_r15
+	.endm
+	.macro ___dig_restore
+	mov     ___dig_r15, %r15
+	mov     ___dig_r14, %r14
+	mov     ___dig_r13, %r13
+	mov     ___dig_r12, %r12
+	mov     ___dig_r11, %r11
+	mov     ___dig_r10, %r10
+	mov     ___dig_r9,  %r9
+	mov     ___dig_r8,  %r8
+	mov     ___dig_rdi, %rdi
+	mov     ___dig_rsi, %rsi
+	mov     ___dig_rdx, %rdx
+	mov     ___dig_rcx, %rcx
+	mov     ___dig_rbx, %rbx
+	mov     ___dig_rax, %rax
+	.endm
         .macro ___dig_printer name
         ## Register printing routine
         ## -------------------------
@@ -15,7 +47,7 @@
         mov     $10, %rbx      # divisor
         ## byte storage setup
         std                   # set direction flag to count backwards
-        mov     $buffer, %rdi # buffer start
+        mov     $___dig_buffer, %rdi # buffer start
         add     $64, %rdi     #        \->end in rdx
 ### divide by 10, push remainder into buffer
 push_digit_\@:
@@ -33,23 +65,61 @@ push_digit_\@:
         or      %rax, %rax      # is quotient zero?
         jnz     push_digit_\@   # if not then repeat
         ## print the accumulated buffer
+        mov     $32, %rax       # place a space before the number
+        stosb
         mov     %rdi, %rsi      # pointer to 1-before filled front of buffer
         add     $1, %rsi        # pointer to beginning of decimal
         mov     $1, %rax        # write system call
-	mov     $buffer, %rdx   # buffer start
+	mov     $___dig_buffer, %rdx   # buffer start
         add     $64, %rdx       #        \->end in rdx
         sub     %rdi, %rdx      # subtract buffer start -> buffer length in rdx
+        add     $1, %rdx        # with an extra one for the space
         mov     $1, %rdi        # STDOUT file descriptor
         syscall                 # print buffer contents
         ## return
         .endm
-        .section        .data
-buffer:         .skip 64
+	.macro ___dig_print_registers
+        ___dig_save
+        ___dig_printer ___dig_rax
+        ___dig_printer ___dig_rbx
+	___dig_printer ___dig_rcx
+	___dig_printer ___dig_rdx
+        ___dig_printer ___dig_rsi
+        ___dig_printer ___dig_rdi
+        ___dig_printer ___dig_r8
+        ___dig_printer ___dig_r9
+        ___dig_printer ___dig_r10
+        ___dig_printer ___dig_r11
+        ___dig_printer ___dig_r12
+        ___dig_printer ___dig_r13
+        ___dig_printer ___dig_r14
+        ___dig_printer ___dig_r15
+        ___dig_restore
+        .endm
+	.section        .data
+___dig_rax:     .quad 0
+___dig_rbx:     .quad 0
+___dig_rcx:     .quad 0
+___dig_rdx:     .quad 0
+___dig_rsi:     .quad 0
+___dig_rdi:     .quad 0
+___dig_r8:      .quad 0
+___dig_r9:      .quad 0
+___dig_r10:     .quad 0
+___dig_r11:     .quad 0
+___dig_r12:     .quad 0
+___dig_r13:     .quad 0
+___dig_r14:     .quad 0
+___dig_r15:     .quad 0
+___dig_buffer:  .skip 64
 .text
 .global main
 main:
-        mov     $4321, %rax
-        ___dig_printer %rax
+        mov     $0, %rax
+        mov     $1, %rbx
+        mov     $2, %rcx
+        mov     $3, %rdx
+        ___dig_print_registers
         mov     $60, %rax
         mov     $0, %rdi
         syscall
