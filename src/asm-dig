@@ -27,14 +27,14 @@
 	mov     %r10, ___dig_r10\
 	mov     %r11, ___dig_r11\
 	mov     %r12, ___dig_r12\
-	mov     %r12, ___dig_r13\
-	mov     %r12, ___dig_r14\
-	mov     %r12, ___dig_r15\
+	mov     %r13, ___dig_r13\
+	mov     %r14, ___dig_r14\
+	mov     %r15, ___dig_r15\
 	.endm\
 	.macro ___restore\
-	mov     ___dig_r12, %r15\
-	mov     ___dig_r12, %r14\
-	mov     ___dig_r12, %r13\
+	mov     ___dig_r15, %r15\
+	mov     ___dig_r14, %r14\
+	mov     ___dig_r13, %r13\
 	mov     ___dig_r12, %r12\
 	mov     ___dig_r11, %r11\
 	mov     ___dig_r10, %r10\
