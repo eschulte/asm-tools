@@ -3,16 +3,13 @@
 # Copyright (C) 2014 Eric Schulte
 # Licensed under the Gnu Public License Version 3 or later
 #
-# Instrument an assembly program to print trace data suitible for
-# input into dig.
+# Instrument an assembly program to print labeled trace data.
 #
-# dig wants it's input of the form
-#
-# 	x	y	z
-# pt1	1	2	0
-# pt2	2	4	0
-#
-# TODO: print some of the heap variables as well.
+# Possible TODO:
+# - print heap stored variables as well
+# - when assembler has been compiled with -fverbose-asm, associated
+#   the comment names (which indicate source variable names) with the
+#   trace data
 #
 1i\
 ### This assembler instrumented with asm-dig to print a full labeled\
