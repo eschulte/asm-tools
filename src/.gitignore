@@ -1,5 +1,4 @@
 asm-trace
-asm-gid
 *.fasl
 *.lx32fsl
 dumper-*.lisp
